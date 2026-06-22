@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3001",
     trace: "on-first-retry",
   },
   projects: [
@@ -18,9 +18,15 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    command: "npm run build && npm run start -- -p 3001",
+    url: "http://localhost:3001",
+    reuseExistingServer: false,
+    timeout: 300_000,
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE: "true",
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+    },
   },
 });

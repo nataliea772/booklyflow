@@ -19,7 +19,8 @@ A full-stack appointment scheduling and automation platform for small businesses
 - **Buffer time** — Configurable minutes between appointments for cleanup and prep
 - **Admin dashboard** — Live stats for today’s appointments, pending, confirmed, and revenue
 - **Confirm / cancel flow** — Manage appointment status from the admin panel
-- **LocalStorage persistence** — Demo mode persists user bookings across sessions
+- **Supabase persistence** — PostgreSQL-backed appointments and services when configured
+- **LocalStorage demo mode** — Falls back to in-browser persistence when Supabase env vars are missing
 - **Unit tests with Vitest** — 23 tests covering scheduling logic and storage
 - **E2E tests with Playwright** — Full browser tests for booking and admin workflows
 
@@ -33,10 +34,11 @@ A full-stack appointment scheduling and automation platform for small businesses
 | Language | [TypeScript](https://www.typescriptlang.org) |
 | Styling | [Tailwind CSS](https://tailwindcss.com) |
 | UI | [React](https://react.dev) |
+| Database | [Supabase](https://supabase.com) (PostgreSQL) |
 | Unit tests | [Vitest](https://vitest.dev) |
 | E2E tests | [Playwright](https://playwright.dev) |
-| Demo persistence | `localStorage` |
-| Planned | [Supabase](https://supabase.com), GitHub Actions, Vercel |
+| Demo fallback | `localStorage` |
+| CI | GitHub Actions |
 
 ---
 
@@ -50,12 +52,18 @@ booklyflow/
 │   └── admin/              # Dashboard, appointments, services
 ├── components/             # Reusable UI (Navbar, Card, Button, StatCard, …)
 ├── hooks/
-│   └── useAppointments.ts  # Shared appointment state (hydration-safe)
+│   ├── useAppointments.ts  # Appointments (Supabase or localStorage)
+│   └── useServices.ts      # Services (Supabase or mock fallback)
 ├── lib/
 │   ├── types.ts            # Service, Appointment, BusinessSettings, TimeSlot
 │   ├── availability.ts     # Scheduling engine (slots, overlap, buffer)
-│   ├── storage.ts          # localStorage CRUD and merge logic
-│   └── mock-data.ts        # Seed data for demo mode
+│   ├── storage.ts          # localStorage CRUD and merge logic (demo mode)
+│   ├── mock-data.ts        # Seed data for demo mode
+│   └── supabase/
+│       ├── client.ts       # Browser Supabase client + isSupabaseConfigured
+│       ├── schema.sql      # Tables, RLS policies, and seed data
+│       ├── appointments.ts # getAppointments, createAppointment, updateStatus
+│       └── services.ts     # getServices
 └── tests/
     ├── availability.test.ts
     ├── storage.test.ts
@@ -83,22 +91,58 @@ Pure TypeScript functions that power slot generation:
 - Excludes slots that overlap pending/confirmed appointments (plus buffer)
 - Respects working days and closing time
 
-### Persistence (`lib/storage.ts`)
+### Persistence
 
-Handles demo-mode persistence without a backend:
+**Supabase mode** (when env vars are set):
 
-- Stores **user-created** appointments in `localStorage`
-- Merges stored data with mock seed appointments (no duplicate IDs)
+- Appointments and services load from PostgreSQL via `@supabase/supabase-js`
+- Bookings and status updates write to the `appointments` table
+- Anonymous RLS policies allow read/write until authentication is added
+
+**Demo mode** (when env vars are missing):
+
+- Stores user-created appointments in `localStorage`
+- Merges stored data with mock seed appointments
 - Persists status overrides for mock appointments separately
-- Safe SSR guards and invalid JSON handling
 
-### Shared state (`hooks/useAppointments.ts`)
+The app picks the mode automatically via `isSupabaseConfigured()` in `lib/supabase/client.ts`.
 
-React hook used by `/book` and admin pages:
+---
 
-- Initializes with mock data to avoid hydration mismatches
-- Loads `localStorage` on client mount
-- Exposes `addAppointment`, `updateAppointmentStatus`, and `resetDemoData`
+## Supabase Setup
+
+### 1. Create a Supabase project
+
+Sign up at [supabase.com](https://supabase.com) and create a new project.
+
+### 2. Run the database schema
+
+Open the **SQL Editor** in your Supabase dashboard and run the contents of:
+
+```
+lib/supabase/schema.sql
+```
+
+This creates `services`, `appointments`, `business_settings`, and `blocked_times` tables, enables RLS with public policies for demo use, and inserts seed services plus business settings.
+
+### 3. Configure environment variables
+
+Create `.env.local` in the project root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Find these values under **Project Settings → API** in Supabase. Use the project URL only (not the `/rest/v1` path).
+
+### 4. Restart the dev server
+
+```bash
+npm run dev
+```
+
+With env vars set, bookings and admin actions persist to Supabase. Remove the variables (or leave them empty) to use **localStorage demo mode** — useful for local development and automated tests without a database.
 
 ---
 
@@ -111,6 +155,8 @@ BooklyFlow has automated coverage at both the logic and browser layers.
 | Vitest unit tests | **23** | Availability engine, storage layer |
 | Playwright E2E | **2** | Full booking flow, double-booking prevention |
 | TypeScript build | ✓ | Strict type-checking via `next build` |
+
+E2E tests build and start the app on port **3001** in **demo mode** (`NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE=true`) so they stay reliable without a live database — even when `.env.local` has Supabase credentials.
 
 ### Commands
 
@@ -139,8 +185,9 @@ npm run lint          # ESLint
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - npm
+- (Optional) Supabase project for production persistence
 
 ### Installation
 
@@ -159,7 +206,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 2. Visit **`/admin/appointments`** — find your booking and click **Confirm**
 3. Visit **`/admin`** — see updated pending, confirmed, and revenue stats
 
-Use **Reset demo data** on the admin pages to clear `localStorage` and restore seed data.
+Use **Reset demo data** on the admin pages to clear `localStorage` and restore seed data (demo mode only).
 
 ---
 
@@ -177,11 +224,10 @@ Use **Reset demo data** on the admin pages to clear `localStorage` and restore s
 
 ## Future Improvements
 
-- [ ] **Supabase** — Replace localStorage with a real PostgreSQL database
 - [ ] **Authentication** — Business owner and customer login
 - [ ] **Email reminders** — Automated confirmation and reminder emails
 - [ ] **Google Calendar** — Two-way calendar sync
-- [ ] **CI/CD** — GitHub Actions for test, lint, and build on every PR
+- [ ] **Blocked times UI** — Admin management for `blocked_times` table
 - [ ] **Deployment** — Production hosting on Vercel
 
 ---

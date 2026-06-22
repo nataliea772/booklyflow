@@ -6,8 +6,8 @@ import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useServices } from "@/hooks/useServices";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
-import { services } from "@/lib/mock-data";
 import type { AppointmentStatus } from "@/lib/types";
 
 const statusStyles: Record<
@@ -43,6 +43,7 @@ function formatDate(dateStr: string) {
 export default function AppointmentsPage() {
   const { appointments, updateAppointmentStatus, resetDemoData } =
     useAppointments();
+  const { services } = useServices();
 
   const statusCounts = useMemo(
     () =>

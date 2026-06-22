@@ -7,14 +7,16 @@ import Badge from "@/components/Badge";
 import Card from "@/components/Card";
 import StatCard from "@/components/StatCard";
 import { useAppointments } from "@/hooks/useAppointments";
-import { getTodayDateString, services } from "@/lib/mock-data";
-
-function getServicePrice(serviceId: string): number {
-  return services.find((service) => service.id === serviceId)?.price ?? 0;
-}
+import { useServices } from "@/hooks/useServices";
+import { getTodayDateString } from "@/lib/mock-data";
 
 export default function AdminDashboardPage() {
   const { appointments, resetDemoData } = useAppointments();
+  const { services } = useServices();
+
+  function getServicePrice(serviceId: string): number {
+    return services.find((service) => service.id === serviceId)?.price ?? 0;
+  }
   const today = getTodayDateString();
 
   const stats = useMemo(() => {

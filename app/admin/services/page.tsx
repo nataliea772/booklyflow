@@ -1,14 +1,20 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
-import { services as initialServices, type Service } from "@/lib/mock-data";
+import { useServices } from "@/hooks/useServices";
+import type { Service } from "@/lib/types";
 
 export default function ServicesPage() {
-  const [serviceList, setServiceList] = useState<Service[]>(initialServices);
+  const { services: loadedServices } = useServices();
+  const [serviceList, setServiceList] = useState<Service[]>(loadedServices);
+
+  useEffect(() => {
+    setServiceList(loadedServices);
+  }, [loadedServices]);
 
   function handleAddService(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

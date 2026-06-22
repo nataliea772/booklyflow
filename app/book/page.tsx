@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useServices } from "@/hooks/useServices";
 import {
   calculateEndTime,
   findService,
@@ -13,7 +14,7 @@ import {
   getAvailableSlots,
   isWorkingDay,
 } from "@/lib/availability";
-import { businessSettings, services } from "@/lib/mock-data";
+import { businessSettings } from "@/lib/mock-data";
 import type { TimeSlot } from "@/lib/types";
 
 type BookedAppointment = {
@@ -37,6 +38,7 @@ function formatDisplayDate(date: string) {
 
 export default function BookPage() {
   const { appointments, addAppointment } = useAppointments();
+  const { services } = useServices();
   const [serviceId, setServiceId] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
   const [selectedStartTime, setSelectedStartTime] = useState("");
@@ -48,7 +50,7 @@ export default function BookPage() {
 
   const selectedService = useMemo(
     () => findService(services, serviceId),
-    [serviceId]
+    [serviceId, services]
   );
 
   const availableSlots: TimeSlot[] = useMemo(() => {
