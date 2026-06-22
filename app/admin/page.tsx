@@ -10,10 +10,14 @@ import StatCard from "@/components/StatCard";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useServices } from "@/hooks/useServices";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
+import {
+  calculateExpectedRevenue,
+  getUpcomingAppointments,
+} from "@/lib/dashboard-stats";
 import { getTodayDateString } from "@/lib/dates";
 import {
   appointmentStatusLabels,
-  formatPrice,
+  formatCurrency,
   formatShortDate,
 } from "@/lib/i18n";
 
@@ -30,7 +34,8 @@ export default function AdminDashboardPage() {
     const todayAppointments = appointments.filter(
       (appointment) =>
         appointment.appointmentDate === today &&
-        appointment.status !== "cancelled"
+        appointment.status !== "cancelled" &&
+        appointment.status !== "completed"
     ).length;
 
     const pending = appointments.filter(
@@ -41,19 +46,18 @@ export default function AdminDashboardPage() {
       (appointment) => appointment.status === "confirmed"
     ).length;
 
-    const revenue = appointments
-      .filter((appointment) => appointment.status === "confirmed")
-      .reduce(
-        (total, appointment) => total + getServicePrice(appointment.serviceId),
-        0
-      );
+    const revenue = calculateExpectedRevenue(
+      appointments,
+      getServicePrice,
+      today
+    );
 
     return { todayAppointments, pending, confirmed, revenue };
   }, [appointments, today, services]);
 
-  const recentAppointments = useMemo(
-    () => appointments.slice(0, 5),
-    [appointments]
+  const upcomingAppointments = useMemo(
+    () => getUpcomingAppointments(appointments, today, 5),
+    [appointments, today]
   );
 
   const todayPending = appointments.filter(
@@ -124,10 +128,10 @@ export default function AdminDashboardPage() {
             testId="dashboard-stat-confirmed"
           />
           <StatCard
-            label="הכנסות משוערות"
-            value={formatPrice(stats.revenue)}
+            label="הכנסות צפויות"
+            value={formatCurrency(stats.revenue)}
             icon="💰"
-            trend="מתורים מאושרים"
+            trend="מתורים מאושרים עתידיים"
             variant="secondary"
             testId="dashboard-stat-revenue"
           />
@@ -198,32 +202,32 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="section-eyebrow">פעילות</p>
                 <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
-                  תורים אחרונים
+                  תורים קרובים
                 </h2>
                 <p className="mt-2 text-base text-muted">
-                  {recentAppointments.length > 0
-                    ? "הפעילות האחרונה בעסק"
-                    : "טרם התקבלו תורים"}
+                  {upcomingAppointments.length > 0
+                    ? "התורים הבאים בעסק"
+                    : "אין תורים קרובים להצגה"}
                 </p>
               </div>
-              {recentAppointments.length > 0 && (
+              {upcomingAppointments.length > 0 && (
                 <Badge variant="secondary">{confirmRate}% מאושרים היום</Badge>
               )}
             </div>
 
-            {recentAppointments.length === 0 ? (
+            {upcomingAppointments.length === 0 ? (
               <div className="mt-8">
                 <EmptyState
                   compact
                   icon="📅"
-                  title="אין תורים להצגה כרגע"
-                  description="כשלקוחות יזמינו תורים, הם יופיעו כאן."
+                  title="אין תורים קרובים"
+                  description="כשיתקבלו הזמנות חדשות לימים הקרובים, הן יופיעו כאן."
                   action={{ label: "לדף ההזמנה", href: "/book" }}
                 />
               </div>
             ) : (
               <ul className="mt-8 space-y-3">
-                {recentAppointments.map((appointment) => (
+                {upcomingAppointments.map((appointment) => (
                   <li
                     key={appointment.id}
                     className="list-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"

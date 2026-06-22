@@ -8,6 +8,9 @@ import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
 import ImageUploadField from "@/components/ImageUploadField";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
+import { HEBREW_WEEKDAYS } from "@/lib/appointment-edit";
+import type { BusinessWorkingDay } from "@/lib/types";
+import { createDefaultWorkingHours } from "@/lib/working-hours";
 import {
   deleteImageByUrl,
   uploadBusinessImage,
@@ -23,6 +26,10 @@ export default function BusinessSettingsPage() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#6d28d9");
+  const [workingHours, setWorkingHours] = useState<BusinessWorkingDay[]>(
+    createDefaultWorkingHours()
+  );
+  const [bufferMinutes, setBufferMinutes] = useState(15);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +43,20 @@ export default function BusinessSettingsPage() {
     setEmail(settings.email ?? "");
     setAddress(settings.address ?? "");
     setPrimaryColor(settings.primaryColor ?? "#6d28d9");
+    setWorkingHours(settings.workingHours);
+    setBufferMinutes(settings.bufferMinutes);
   }, [settings]);
+
+  function updateDayHours(
+    dayOfWeek: number,
+    patch: Partial<Pick<BusinessWorkingDay, "isOpen" | "startHour" | "endHour">>
+  ) {
+    setWorkingHours((current) =>
+      current.map((day) =>
+        day.dayOfWeek === dayOfWeek ? { ...day, ...patch } : day
+      )
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +91,8 @@ export default function BusinessSettingsPage() {
         primaryColor: primaryColor || null,
         logoUrl,
         coverImageUrl,
+        workingHours,
+        bufferMinutes,
       });
 
       if (result.error) {
@@ -139,7 +161,8 @@ export default function BusinessSettingsPage() {
 
       <div className="page-container py-12 sm:py-16 lg:py-20">
         <div className="grid gap-10 lg:grid-cols-5">
-          <Card glass accent="primary" padding="lg" className="lg:col-span-3">
+          <div className="space-y-8 lg:col-span-3">
+          <Card glass accent="primary" padding="lg">
             <CardHeader
               title="פרטים ומיתוג"
               description="המידע יוצג בראש דף ההזמנה הציבורי."
@@ -274,6 +297,124 @@ export default function BusinessSettingsPage() {
               </Button>
             </form>
           </Card>
+
+          <Card glass accent="secondary" padding="lg">
+            <CardHeader
+              title="שעות פעילות לפי יום"
+              description="הגדירו שעות שונות לכל יום בשבוע — משפיע על זמינות בדף ההזמנה."
+            />
+
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+              data-testid="working-hours-form"
+            >
+              <div className="space-y-3">
+                {HEBREW_WEEKDAYS.map((day) => {
+                  const dayHours = workingHours.find(
+                    (item) => item.dayOfWeek === day.value
+                  );
+                  if (!dayHours) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={day.value}
+                      className="rounded-2xl border border-primary/10 bg-white/80 p-4"
+                      data-testid={`working-day-row-${day.value}`}
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateDayHours(day.value, {
+                                isOpen: !dayHours.isOpen,
+                              })
+                            }
+                            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                              dayHours.isOpen
+                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
+                            }`}
+                            data-testid={`working-day-toggle-${day.value}`}
+                          >
+                            {dayHours.isOpen ? "פתוח" : "סגור"}
+                          </button>
+                          <span className="text-base font-bold text-[#1F2937]">
+                            {day.label}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
+                          <div>
+                            <label className="mb-1 block text-xs font-semibold text-muted">
+                              התחלה
+                            </label>
+                            <input
+                              type="time"
+                              value={dayHours.startHour}
+                              disabled={!dayHours.isOpen}
+                              onChange={(e) =>
+                                updateDayHours(day.value, {
+                                  startHour: e.target.value,
+                                })
+                              }
+                              className="input-field ltr-value"
+                              data-testid={`working-day-start-${day.value}`}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-semibold text-muted">
+                              סיום
+                            </label>
+                            <input
+                              type="time"
+                              value={dayHours.endHour}
+                              disabled={!dayHours.isOpen}
+                              onChange={(e) =>
+                                updateDayHours(day.value, {
+                                  endHour: e.target.value,
+                                })
+                              }
+                              className="input-field ltr-value"
+                              data-testid={`working-day-end-${day.value}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="max-w-xs">
+                <label
+                  htmlFor="bufferMinutes"
+                  className="mb-2.5 block text-sm font-bold text-[#1F2937]"
+                >
+                  מרווח בין תורים בדקות
+                </label>
+                <input
+                  id="bufferMinutes"
+                  type="number"
+                  min={0}
+                  step={5}
+                  value={bufferMinutes}
+                  onChange={(e) => setBufferMinutes(Number(e.target.value))}
+                  className="input-field ltr-value"
+                  data-testid="buffer-minutes-input"
+                  required
+                />
+              </div>
+
+              <Button type="submit" size="lg" disabled={isSaving}>
+                {isSaving ? "שומר…" : "שמירת שעות פעילות"}
+              </Button>
+            </form>
+          </Card>
+          </div>
 
           <div className="space-y-6 lg:col-span-2">
             <Card glass accent="secondary" padding="lg">

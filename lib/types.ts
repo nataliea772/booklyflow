@@ -8,7 +8,11 @@ export type Service = {
   imageUrl?: string;
 };
 
-export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
+export type AppointmentStatus =
+  | "pending"
+  | "confirmed"
+  | "cancelled"
+  | "completed";
 
 export type Appointment = {
   id: string;
@@ -21,15 +25,37 @@ export type Appointment = {
   endTime: string;
   status: AppointmentStatus;
   notes?: string;
+  adminNote?: string;
+  createdAt: string;
+  smsSentAt?: string;
+  smsError?: string;
+};
+
+export type BusinessWorkingDay = {
+  dayOfWeek: number;
+  isOpen: boolean;
+  startHour: string;
+  endHour: string;
+};
+
+export type BlockedTime = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  startTime?: string;
+  endTime?: string;
+  isFullDay: boolean;
+  reason?: string;
   createdAt: string;
 };
 
 export type BusinessSettings = {
   id?: string;
   businessName: string;
+  workingHours: BusinessWorkingDay[];
+  bufferMinutes: number;
   startHour: string;
   endHour: string;
-  bufferMinutes: number;
   workingDays: number[];
   description?: string;
   phone?: string;
@@ -52,4 +78,6 @@ export type GetAvailableSlotsParams = {
   selectedService: Service;
   appointments: Appointment[];
   businessSettings: BusinessSettings;
+  blockedTimes?: BlockedTime[];
+  excludeAppointmentId?: string;
 };

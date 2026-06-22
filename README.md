@@ -132,6 +132,60 @@ lib/supabase/schema.sql
 
 This creates `services`, `appointments`, `business_settings`, and `blocked_times` tables, enables RLS with public policies for demo use, and inserts seed services plus business settings.
 
+**If service edit, deactivate, or reactivate fails** (for example with a Supabase error about coercing to a single JSON object), run the services RLS migration in the Supabase SQL Editor:
+
+```
+lib/supabase/migrations/002_services_admin_policies.sql
+```
+
+This grants authenticated admins full read/update access (including inactive services) while keeping public booking limited to active services only. Also run `001_business_branding.sql` if you use business logos, cover images, or service photos.
+
+If **service delete** fails, run:
+
+```
+lib/supabase/migrations/003_services_delete_policy.sql
+```
+
+Hard delete is only allowed when a service has no linked appointments; otherwise use deactivate (`is_active = false`).
+
+If **appointment edit** or **working-hours save** fails, run:
+
+```
+lib/supabase/migrations/004_appointments_and_business_settings_policies.sql
+```
+
+For **per-day working hours** and **blocked dates/times** (vacations, breaks, holidays), run:
+
+```
+lib/supabase/migrations/005_working_hours_and_blocked_times.sql
+```
+
+This adds `business_settings.working_hours` (JSONB), updates `blocked_times` for full-day and time-range blocks, and RLS policies for admin CRUD on blocked times.
+
+For **SMS confirmation tracking** on appointments, run:
+
+```
+lib/supabase/migrations/006_sms_notifications.sql
+```
+
+For **completed status** and **internal admin notes**, run:
+
+```
+lib/supabase/migrations/007_appointment_status_and_admin_notes.sql
+```
+
+For **blocked time date ranges** (vacations and multi-day unavailable periods), run:
+
+```
+lib/supabase/migrations/008_blocked_time_ranges.sql
+```
+
+For **SMS event tracking** (confirm, cancel, reschedule notifications), run:
+
+```
+lib/supabase/migrations/009_sms_event_tracking.sql
+```
+
 ### 3. Configure environment variables
 
 Create `.env.local` in the project root:
@@ -142,6 +196,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 Find these values under **Project Settings → API** in Supabase. Use the project URL only (not the `/rest/v1` path).
+
+#### Optional: SMS notifications (Twilio)
+
+Add these **server-only** variables to `.env.local` to send SMS when an admin confirms, cancels, or reschedules an appointment. Do not commit real values.
+
+```env
+SMS_PROVIDER=twilio
+SMS_ACCOUNT_SID=your-twilio-account-sid
+SMS_AUTH_TOKEN=your-twilio-auth-token
+SMS_FROM_NUMBER=+15551234567
+```
+
+If SMS credentials are missing, appointment actions still succeed and the admin sees a non-blocking warning.
+
+Run migration `009_sms_event_tracking.sql` in Supabase to record notification history in `appointment_notifications`.
+
+After booking at `/book`, customers are redirected to `/thank-you?appointmentId=...` with a Hebrew summary (no admin notes).
 
 ### 4. Restart the dev server
 
@@ -171,7 +242,7 @@ BooklyFlow has automated coverage at both the logic and browser layers.
 | Playwright E2E | **2** | Full booking flow, double-booking prevention |
 | TypeScript build | ✓ | Strict type-checking via `next build` |
 
-E2E tests build and start the app on port **3001** in **demo mode** (`NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE=true`) so they stay reliable without a live database — even when `.env.local` has Supabase credentials. Unit tests do not depend on Supabase Auth.
+E2E tests build and start the app on port **3002** in **demo mode** (`NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE=true`) so they stay reliable without a live database — even when `.env.local` has Supabase credentials. Unit tests do not depend on Supabase Auth.
 
 ### E2E admin credentials (optional)
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import SiteChrome from "@/components/SiteChrome";
+import { BusinessSettingsProvider } from "@/components/BusinessSettingsProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col text-foreground">
-        <SiteChrome>{children}</SiteChrome>
+        <BusinessSettingsProvider>
+          <SiteChrome>{children}</SiteChrome>
+        </BusinessSettingsProvider>
       </body>
     </html>
   );

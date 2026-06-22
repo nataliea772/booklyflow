@@ -1,9 +1,9 @@
 const GRADIENTS = [
-  "from-[#6d28d9] via-[#8b5cf6] to-[#f472b6]",
-  "from-[#7c3aed] via-[#a78bfa] to-[#fbcfe8]",
-  "from-[#5b21b6] via-[#7c3aed] to-[#ec4899]",
-  "from-[#4c1d95] via-[#8b5cf6] to-[#f9a8d4]",
-  "from-[#6d28d9] via-[#c084fc] to-[#fda4af]",
+  "from-[#581C87] via-[#BE185D] to-[#F9A8D4]",
+  "from-[#6B21A8] via-[#DB2777] to-[#FBCFE8]",
+  "from-[#581C87] via-[#9D174D] to-[#F5D0A9]",
+  "from-[#701A75] via-[#C026D3] to-[#F9A8D4]",
+  "from-[#581C87] via-[#BE185D] to-[#E9D5FF]",
 ];
 
 function hashSeed(value: string): number {
@@ -20,5 +20,5 @@ export function getPlaceholderGradient(seed: string): string {
 }
 
 export function getBrandColor(settingsColor?: string): string {
-  return settingsColor?.trim() || "#6d28d9";
+  return settingsColor?.trim() || "#581C87";
 }

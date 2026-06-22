@@ -1,13 +1,14 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import BookingSteps from "@/components/BookingSteps";
 import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
 import Button from "@/components/Button";
-import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
 import ServiceSelectCards from "@/components/ServiceSelectCards";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useBlockedTimes } from "@/hooks/useBlockedTimes";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { useServices } from "@/hooks/useServices";
 import {
@@ -15,28 +16,21 @@ import {
   findService,
   formatTimeLabel,
   getAvailableSlots,
+  isDateFullyBlocked,
   isWorkingDay,
 } from "@/lib/availability";
+import { formatBookingHoursHint } from "@/lib/appointment-edit";
 import { getPublicBusinessName } from "@/lib/business-config";
-import { formatDisplayDate } from "@/lib/i18n";
 import type { TimeSlot } from "@/lib/types";
 
-type BookedAppointment = {
-  serviceName: string;
-  appointmentDate: string;
-  startTime: string;
-  endTime: string;
-  customerName: string;
-  customerPhone: string;
-  notes?: string;
-};
-
 export default function BookPage() {
+  const router = useRouter();
   const { appointments, addAppointment, isReady: appointmentsReady } =
     useAppointments();
   const { services, isReady: servicesReady } = useServices();
   const { settings: businessSettings, isReady: settingsReady } =
     useBusinessSettings();
+  const { blockedTimes, isReady: blockedTimesReady } = useBlockedTimes();
 
   const [serviceId, setServiceId] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
@@ -44,10 +38,10 @@ export default function BookPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [bookedAppointment, setBookedAppointment] =
-    useState<BookedAppointment | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isReady = servicesReady && settingsReady && appointmentsReady;
+  const isReady =
+    servicesReady && settingsReady && appointmentsReady && blockedTimesReady;
 
   const businessName = getPublicBusinessName(businessSettings);
   const displaySettings = { ...businessSettings, businessName };
@@ -66,8 +60,15 @@ export default function BookPage() {
       selectedService,
       appointments,
       businessSettings,
+      blockedTimes,
     });
-  }, [selectedService, appointmentDate, appointments, businessSettings]);
+  }, [
+    selectedService,
+    appointmentDate,
+    appointments,
+    businessSettings,
+    blockedTimes,
+  ]);
 
   const currentStep: 1 | 2 | 3 = !serviceId
     ? 1
@@ -89,133 +90,55 @@ export default function BookPage() {
   const isClosedDay =
     Boolean(appointmentDate) && !isWorkingDay(appointmentDate, businessSettings);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const isFullyBlockedDay =
+    Boolean(appointmentDate) &&
+    isDateFullyBlocked(appointmentDate, blockedTimes);
+
+  const hoursHint = formatBookingHoursHint(
+    businessSettings,
+    appointmentDate || undefined
+  );
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!isFormComplete || !selectedService) return;
+    if (!isFormComplete || !selectedService || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const endTime = calculateEndTime(
       selectedStartTime,
       selectedService.durationMinutes
     );
 
-    addAppointment({
-      id: `apt-${Date.now()}`,
-      serviceId: selectedService.id,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      appointmentDate,
-      startTime: selectedStartTime,
-      endTime,
-      status: "pending",
-      notes: notes.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      const created = await addAppointment({
+        id: `apt-${Date.now()}`,
+        serviceId: selectedService.id,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        appointmentDate,
+        startTime: selectedStartTime,
+        endTime,
+        status: "pending",
+        notes: notes.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
 
-    setBookedAppointment({
-      serviceName: selectedService.name,
-      appointmentDate,
-      startTime: selectedStartTime,
-      endTime,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      notes: notes.trim() || undefined,
-    });
-  }
-
-  function resetBooking() {
-    setBookedAppointment(null);
-    setServiceId("");
-    setAppointmentDate("");
-    setSelectedStartTime("");
-    setCustomerName("");
-    setCustomerPhone("");
-    setNotes("");
+      const redirectId = created?.id;
+      router.push(
+        redirectId
+          ? `/thank-you?appointmentId=${encodeURIComponent(redirectId)}`
+          : "/thank-you"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (!isReady) {
     return (
       <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
         <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
-    );
-  }
-
-  if (bookedAppointment) {
-    return (
-      <div className="page-container py-20 sm:py-28">
-        <div className="mx-auto max-w-lg">
-          <div className="surface-premium p-8 text-center sm:p-10">
-            <span
-              className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-bl from-emerald-50 to-emerald-100 text-4xl ring-1 ring-emerald-200/60"
-              role="img"
-              aria-hidden="true"
-            >
-              ✅
-            </span>
-            <h1
-              className="mt-8 text-3xl font-bold text-[#111827]"
-              data-testid="booking-success-message"
-            >
-              בקשת ההזמנה התקבלה!
-            </h1>
-            <p className="mt-4 text-lg leading-relaxed text-muted">
-              תודה, {bookedAppointment.customerName}. בקשת התור שלך ב-
-              {businessName} נשלחה בהצלחה.
-            </p>
-
-            <div className="mt-8 rounded-2xl border border-primary/10 bg-primary-soft/40 p-6 text-right">
-              <p className="text-sm font-semibold text-muted">פרטי התור</p>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">שירות</dt>
-                  <dd className="font-semibold text-[#111827]">
-                    {bookedAppointment.serviceName}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">תאריך</dt>
-                  <dd className="font-semibold text-[#111827]">
-                    {formatDisplayDate(bookedAppointment.appointmentDate)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">שעה</dt>
-                  <dd className="font-semibold text-[#111827] ltr-value">
-                    {formatTimeLabel(bookedAppointment.startTime)} –{" "}
-                    {formatTimeLabel(bookedAppointment.endTime)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted">טלפון</dt>
-                  <dd className="font-semibold text-[#111827] ltr-value">
-                    {bookedAppointment.customerPhone}
-                  </dd>
-                </div>
-                {bookedAppointment.notes && (
-                  <div>
-                    <dt className="text-muted">הערות</dt>
-                    <dd className="mt-1 font-medium text-[#111827]">
-                      {bookedAppointment.notes}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Button href="/" variant="outline" size="lg">
-                חזרה לדף הבית
-              </Button>
-              <Button
-                onClick={resetBooking}
-                size="lg"
-                data-testid="book-another-button"
-              >
-                הזמנת תור נוסף
-              </Button>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
@@ -227,7 +150,7 @@ export default function BookPage() {
         <div className="page-container py-12 sm:py-16">
           <EmptyState
             icon="✨"
-            title="אין שירותים זמינים כרגע"
+            title="אין שירותים זמינים להזמנה כרגע"
             description="העסק מעדכן כעת את רשימת השירותים. נשמח לראות אתכם שוב בקרוב."
             action={{ label: "חזרה לדף הראשי", href: "/" }}
           />
@@ -240,20 +163,25 @@ export default function BookPage() {
     <>
       <BusinessBrandingHeader settings={displaySettings} />
 
-      <div className="page-container py-12 sm:py-16 lg:py-20">
-        <div className="mx-auto max-w-3xl">
-          <div className="surface-premium hero-glow-ring relative overflow-hidden p-8 sm:p-10">
-            <CardHeader
-              title="פרטי ההזמנה"
-              description="מלאו את הפרטים בשלושה צעדים קצרים."
-            />
+      <div className="page-container pb-28 pt-2 sm:pb-12 sm:pt-4">
+        <div className="mx-auto max-w-2xl">
+          <div className="boutique-card p-5 sm:p-8">
+            <div className="mb-6 border-b border-[#F9A8D4]/20 pb-6">
+              <h2 className="text-xl font-extrabold text-[#581C87] sm:text-2xl">
+                השלימו את ההזמנה
+              </h2>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                שלושה צעדים קצרים — וסיימתם.
+              </p>
+            </div>
+
             <BookingSteps currentStep={currentStep} />
 
-            <form onSubmit={handleSubmit} className="space-y-10">
+            <form onSubmit={handleSubmit} className="space-y-8">
               <section className="space-y-4">
-                <h2 className="text-lg font-bold text-[#111827]">
-                  1. בחירת שירות
-                </h2>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                  1 · בחירת שירות
+                </h3>
                 <ServiceSelectCards
                   services={activeServices}
                   selectedId={serviceId}
@@ -279,9 +207,9 @@ export default function BookPage() {
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-lg font-bold text-[#111827]">
-                  2. בחירת תאריך ושעה
-                </h2>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                  2 · תאריך ושעה
+                </h3>
                 <input
                   type="date"
                   id="date"
@@ -293,22 +221,23 @@ export default function BookPage() {
                   className="input-field ltr-value"
                   disabled={!serviceId}
                 />
-                <p className="text-sm text-muted">
-                  פתוחים א׳–ה׳, {businessSettings.startHour} –{" "}
-                  {businessSettings.endHour}
-                </p>
+                <p className="text-xs text-[#6B7280]">{hoursHint}</p>
 
                 {!serviceId || !appointmentDate ? (
-                  <p className="rounded-2xl border border-dashed border-primary/20 bg-primary-soft/30 px-4 py-6 text-center text-sm text-muted">
+                  <p className="rounded-2xl border border-dashed border-[#F9A8D4]/30 px-4 py-5 text-center text-sm text-[#6B7280]">
                     בחרו שירות ותאריך כדי לראות שעות פנויות.
                   </p>
                 ) : isClosedDay ? (
-                  <p className="rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-6 text-center text-sm font-medium text-amber-800">
-                    אנחנו סגורים ביום זה. אנא בחרו יום בין ראשון לחמישי.
+                  <p className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]">
+                    העסק אינו פעיל ביום זה
+                  </p>
+                ) : isFullyBlockedDay ? (
+                  <p className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]">
+                    התאריך שנבחר אינו זמין להזמנות
                   </p>
                 ) : availableSlots.length === 0 ? (
-                  <p className="rounded-2xl border border-primary/15 bg-primary-soft/40 px-4 py-6 text-center text-sm font-medium text-[#111827]">
-                    אין שעות פנויות לשירות זה בתאריך שנבחר.
+                  <p className="rounded-2xl border border-[#E9D5FF] bg-[#FDF4FF]/50 px-4 py-6 text-center text-sm font-medium text-[#581C87]">
+                    אין שעות פנויות בתאריך שנבחר
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-3">
@@ -333,14 +262,14 @@ export default function BookPage() {
               </section>
 
               <section className="space-y-4">
-                <h2 className="text-lg font-bold text-[#111827]">
-                  3. פרטי לקוח
-                </h2>
-                <div className="grid gap-6 sm:grid-cols-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                  3 · פרטי לקוח
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label
                       htmlFor="name"
-                      className="mb-2.5 block text-sm font-bold text-[#111827]"
+                      className="mb-2 block text-sm font-semibold text-[#1F2937]"
                     >
                       שם מלא
                     </label>
@@ -358,7 +287,7 @@ export default function BookPage() {
                   <div>
                     <label
                       htmlFor="phone"
-                      className="mb-2.5 block text-sm font-bold text-[#111827]"
+                      className="mb-2 block text-sm font-semibold text-[#1F2937]"
                     >
                       מספר טלפון
                     </label>
@@ -377,10 +306,10 @@ export default function BookPage() {
                 <div>
                   <label
                     htmlFor="notes"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
+                    className="mb-2 block text-sm font-semibold text-[#1F2937]"
                   >
                     הערות{" "}
-                    <span className="font-normal text-muted">(אופציונלי)</span>
+                    <span className="font-normal text-[#6B7280]">(אופציונלי)</span>
                   </label>
                   <textarea
                     id="notes"
@@ -388,22 +317,22 @@ export default function BookPage() {
                     data-testid="notes-input"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    rows={4}
+                    rows={3}
                     placeholder="בקשות מיוחדות..."
                     className="input-field resize-none"
                   />
                 </div>
               </section>
 
-              <div className="border-t border-primary/10 pt-8">
+              <div className="sticky bottom-0 -mx-6 border-t bg-[#FFFDF8]/95 px-6 py-4 backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4" style={{ borderColor: "rgba(124, 58, 237, 0.1)" }}>
                 <Button
                   type="submit"
                   size="xl"
-                  className="w-full sm:w-auto"
-                  disabled={!isFormComplete}
+                  className="w-full"
+                  disabled={!isFormComplete || isSubmitting}
                   data-testid="submit-booking-button"
                 >
-                  ← שליחת בקשת תור
+                  שליחת בקשת תור
                 </Button>
               </div>
             </form>

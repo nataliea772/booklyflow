@@ -26,26 +26,26 @@ export default function EmptyState({
       className={
         compact
           ? "relative flex flex-col items-center px-4 py-10 text-center"
-          : "surface-premium relative flex flex-col items-center overflow-hidden px-8 py-16 text-center sm:px-12 sm:py-20"
+          : "surface-premium relative flex flex-col items-center overflow-hidden px-6 py-14 text-center sm:px-10 sm:py-16"
       }
     >
       {!compact && (
         <>
           <div className="empty-state-glow pointer-events-none absolute inset-0" />
-          <div className="pointer-events-none absolute -top-20 start-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -top-16 start-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-[#F9A8D4]/20 blur-3xl" />
         </>
       )}
 
       <div className="relative">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[1.75rem] bg-gradient-to-bl from-primary/15 via-white to-secondary/10 text-4xl shadow-[var(--card-shadow)] ring-1 ring-primary/15">
+        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[1.75rem] bg-gradient-to-bl from-[#FDF4FF] via-white to-[#FCE7F3] text-4xl shadow-[var(--card-shadow)] ring-1 ring-[#E9D5FF]">
           <span role="img" aria-hidden="true">
             {icon}
           </span>
         </div>
-        <div className="absolute -inset-3 -z-10 rounded-[2rem] border border-dashed border-primary/15" />
+        <div className="absolute -inset-3 -z-10 rounded-[2rem] border border-dashed border-[#F9A8D4]/30" />
       </div>
 
-      <h3 className="relative mt-8 text-2xl font-extrabold tracking-tight text-[#111827] sm:text-3xl">
+      <h3 className="relative mt-8 text-2xl font-extrabold tracking-tight text-[#581C87] sm:text-3xl">
         {title}
       </h3>
       <p className="relative mt-3 max-w-md text-base leading-relaxed text-muted sm:text-lg">

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import Button from "@/components/Button";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { getPublicBusinessName } from "@/lib/business-config";
 
@@ -28,13 +27,13 @@ export default function PublicNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/60 bg-white/75 shadow-[0_8px_32px_rgba(109,40,217,0.06)] backdrop-blur-2xl">
-      <nav className="page-container flex h-16 items-center justify-between sm:h-[4.75rem]">
+    <header className="boutique-nav sticky top-0 z-50">
+      <nav className="page-container flex h-14 items-center justify-between sm:h-16">
         <Link
           href="/"
-          className="group flex min-w-0 items-center gap-3 transition-opacity hover:opacity-90"
+          className="group flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-90"
         >
-          <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-bl from-[#6d28d9] to-[#8b5cf6] text-base font-extrabold text-white shadow-lg shadow-primary/35 ring-1 ring-white/20 transition-transform duration-300 group-hover:scale-105">
+          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-bl from-[#581C87] to-[#BE185D] text-sm font-extrabold text-white shadow-md shadow-[#BE185D]/25 sm:h-10 sm:w-10">
             {settings.logoUrl ? (
               <Image
                 src={settings.logoUrl}
@@ -47,35 +46,30 @@ export default function PublicNavbar() {
               businessName.charAt(0)
             )}
           </span>
-          <span className="truncate text-lg font-extrabold tracking-tight text-[#111827] sm:text-xl">
+          <span className="truncate text-base font-bold tracking-tight text-[#581C87] sm:text-lg">
             {businessName}
           </span>
         </Link>
 
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-1 sm:flex">
           {publicLinks.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className={`rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-200 ${
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                   isActive(link.href, link.exact)
-                    ? "bg-primary-light/90 text-primary shadow-sm ring-1 ring-primary/15"
-                    : "text-[#111827] hover:bg-white/80 hover:text-primary"
+                    ? "bg-[#FDF4FF] text-[#581C87] ring-1 ring-[#E9D5FF]"
+                    : "text-[#6B7280] hover:bg-[#FFF1F5] hover:text-[#BE185D]"
                 }`}
               >
                 {link.label}
               </Link>
             </li>
           ))}
-          <li className="me-2 ms-3">
-            <Button href="/book" size="sm">
-              הזמנת תור
-            </Button>
-          </li>
-          <li>
+          <li className="me-1 ms-3">
             <Link
               href="/login"
-              className="rounded-xl px-3 py-2 text-xs font-medium text-muted transition-colors hover:text-primary"
+              className="text-xs font-medium text-[#6B7280]/80 transition-colors hover:text-[#BE185D]"
             >
               כניסת מנהל
             </Link>
@@ -84,13 +78,13 @@ export default function PublicNavbar() {
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-xl border border-primary/10 bg-white/80 p-2.5 text-[#111827] shadow-sm transition-colors hover:bg-primary-light/50 md:hidden"
+          className="inline-flex items-center justify-center rounded-full border border-[#F9A8D4]/40 bg-[#FFFDF8] p-2 text-[#581C87] sm:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="פתיחת תפריט"
           aria-expanded={mobileOpen}
         >
           <svg
-            className="h-6 w-6"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -114,33 +108,28 @@ export default function PublicNavbar() {
       </nav>
 
       {mobileOpen && (
-        <div className="border-t border-primary/10 bg-white/95 px-5 py-5 backdrop-blur-xl md:hidden">
-          <ul className="flex flex-col gap-1.5">
+        <div className="border-t border-[#F9A8D4]/25 px-5 py-4 sm:hidden">
+          <ul className="flex flex-col gap-1">
             {publicLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`block rounded-xl px-4 py-3.5 text-sm font-bold transition-colors ${
+                  className={`block rounded-xl px-4 py-3 text-sm font-semibold ${
                     isActive(link.href, link.exact)
-                      ? "bg-primary-light text-primary"
-                      : "text-[#111827] hover:bg-violet-50 hover:text-primary"
+                      ? "bg-[#FDF4FF] text-[#581C87]"
+                      : "text-[#1F2937] hover:bg-[#FFF1F5]"
                   }`}
                 >
                   {link.label}
                 </Link>
               </li>
             ))}
-            <li className="mt-3">
-              <Button href="/book" size="sm" className="w-full">
-                הזמנת תור
-              </Button>
-            </li>
-            <li className="mt-2 text-center">
+            <li className="mt-2 border-t border-[#F9A8D4]/20 pt-3 text-center">
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="text-xs font-medium text-muted hover:text-primary"
+                className="text-xs font-medium text-[#6B7280] hover:text-[#BE185D]"
               >
                 כניסת מנהל
               </Link>

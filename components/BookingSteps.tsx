@@ -10,7 +10,7 @@ const steps = [
 
 export default function BookingSteps({ currentStep }: BookingStepsProps) {
   return (
-    <ol className="mb-10 grid gap-3 sm:grid-cols-3">
+    <ol className="mb-8 grid gap-2 sm:grid-cols-3 sm:gap-3">
       {steps.map((step) => {
         const isActive = step.number === currentStep;
         const isComplete = step.number < currentStep;
@@ -18,32 +18,29 @@ export default function BookingSteps({ currentStep }: BookingStepsProps) {
         return (
           <li
             key={step.number}
-            className={`relative overflow-hidden rounded-2xl border px-4 py-4 transition-all duration-300 ${
+            className={`rounded-2xl border px-3 py-3 transition-all duration-300 sm:px-4 sm:py-3.5 ${
               isActive
-                ? "border-primary/25 bg-white shadow-[var(--card-shadow-lg)] ring-2 ring-primary/12"
+                ? "border-[#F9A8D4]/50 bg-gradient-to-bl from-[#FDF4FF] to-[#FFFDF8] shadow-sm ring-1 ring-[#E9D5FF]"
                 : isComplete
-                  ? "border-emerald-200/80 bg-emerald-50/60"
-                  : "border-primary/10 bg-white/50"
+                  ? "border-[#F9A8D4]/35 bg-[#FFF1F5]/80"
+                  : "border-[rgba(190,24,93,0.08)] bg-white/70"
             }`}
           >
-            {isActive && (
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-l from-[#6d28d9] to-[#8b5cf6]" />
-            )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-extrabold sm:h-9 sm:w-9 sm:text-sm ${
                   isActive
-                    ? "btn-gradient text-white shadow-md shadow-primary/30"
+                    ? "btn-gradient text-white shadow-md"
                     : isComplete
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "bg-primary-soft text-primary"
+                      ? "bg-[#BE185D] text-white shadow-sm"
+                      : "bg-[#FDF4FF] text-[#581C87]"
                 }`}
               >
                 {isComplete ? "✓" : step.number}
               </span>
               <span
-                className={`text-sm font-bold ${
-                  isActive ? "text-[#111827]" : "text-muted"
+                className={`text-xs font-bold sm:text-sm ${
+                  isActive ? "text-[#581C87]" : "text-[#6B7280]"
                 }`}
               >
                 {step.label}

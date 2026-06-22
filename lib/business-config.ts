@@ -1,19 +1,29 @@
 import type { BusinessSettings } from "./types";
+import {
+  createDefaultWorkingHours,
+  deriveLegacyFromWorkingHours,
+} from "./working-hours";
 
 /** Fallback when no business name is configured (public-facing only). */
 export const PUBLIC_BUSINESS_FALLBACK_NAME = "העסק שלי";
 
+const defaultWorkingHours = createDefaultWorkingHours();
+const defaultLegacy = deriveLegacyFromWorkingHours(defaultWorkingHours);
+
 export const defaultBusinessSettings: BusinessSettings = {
   businessName: PUBLIC_BUSINESS_FALLBACK_NAME,
-  startHour: "09:00",
-  endHour: "18:00",
+  workingHours: defaultWorkingHours,
   bufferMinutes: 15,
-  workingDays: [0, 1, 2, 3, 4],
+  startHour: defaultLegacy.startHour,
+  endHour: defaultLegacy.endHour,
+  workingDays: defaultLegacy.workingDays,
 };
 
 const LEGACY_PRODUCT_NAMES = new Set(["booklyflow", "סטודיו booklyflow"]);
 
-export function getPublicBusinessName(settings: BusinessSettings): string {
+export function getPublicBusinessName(
+  settings: Pick<BusinessSettings, "businessName">
+): string {
   const name = settings.businessName?.trim();
   if (!name) {
     return PUBLIC_BUSINESS_FALLBACK_NAME;

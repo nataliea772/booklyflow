@@ -4,6 +4,7 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   pending: "ממתין",
   confirmed: "מאושר",
   cancelled: "מבוטל",
+  completed: "הושלם",
 };
 
 export function formatDisplayDate(date: string): string {
@@ -30,4 +31,9 @@ export function formatPrice(price: number): string {
   }
 
   return `₪${price.toLocaleString("he-IL")}`;
+}
+
+/** Always shows a numeric currency value (e.g. ₪0 for zero revenue). */
+export function formatCurrency(amount: number): string {
+  return `₪${amount.toLocaleString("he-IL")}`;
 }

@@ -8,6 +8,7 @@ import {
 const STORAGE_KEYS = [
   "booklyflow-appointments",
   "booklyflow-appointment-status-overrides",
+  "booklyflow-appointment-edits",
 ];
 
 const E2E_SERVICE_ID = "5";
@@ -94,9 +95,10 @@ test.describe("BooklyFlow booking flow", () => {
     });
 
     await page.getByTestId("submit-booking-button").click();
+    await page.waitForURL(/\/thank-you/);
     await expect(page.getByTestId("booking-success-message")).toBeVisible();
     await expect(page.getByTestId("booking-success-message")).toContainText(
-      "בקשת ההזמנה התקבלה"
+      "תודה, הבקשה לתור התקבלה"
     );
 
     await page.goto("/admin/appointments");
@@ -161,9 +163,11 @@ test.describe("BooklyFlow booking flow", () => {
     });
 
     await page.getByTestId("submit-booking-button").click();
+    await page.waitForURL(/\/thank-you/);
     await expect(page.getByTestId("booking-success-message")).toBeVisible();
 
     await page.getByTestId("book-another-button").click();
+    await page.waitForURL(/\/book/);
 
     await selectServiceAndDate(page, appointmentDate);
 

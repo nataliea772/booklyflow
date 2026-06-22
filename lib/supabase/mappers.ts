@@ -22,11 +22,19 @@ export type AppointmentRow = {
   end_time: string;
   status: string;
   notes: string | null;
+  admin_note?: string | null;
+  sms_sent_at?: string | null;
+  sms_error?: string | null;
   created_at: string;
 };
 
 function isAppointmentStatus(value: string): value is AppointmentStatus {
-  return value === "pending" || value === "confirmed" || value === "cancelled";
+  return (
+    value === "pending" ||
+    value === "confirmed" ||
+    value === "cancelled" ||
+    value === "completed"
+  );
 }
 
 export function mapServiceRow(row: ServiceRow): Service {
@@ -55,6 +63,9 @@ export function mapAppointmentRow(row: AppointmentRow): Appointment {
     endTime: row.end_time,
     status,
     notes: row.notes ?? undefined,
+    adminNote: row.admin_note ?? undefined,
     createdAt: row.created_at,
+    smsSentAt: row.sms_sent_at ?? undefined,
+    smsError: row.sms_error ?? undefined,
   };
 }

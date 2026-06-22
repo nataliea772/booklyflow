@@ -3,6 +3,7 @@ import type { Appointment, AppointmentStatus } from "./types";
 
 export const APPOINTMENTS_STORAGE_KEY = "booklyflow-appointments";
 const STATUS_OVERRIDES_STORAGE_KEY = "booklyflow-appointment-status-overrides";
+const APPOINTMENT_EDITS_STORAGE_KEY = "booklyflow-appointment-edits";
 
 const mockAppointmentIds = new Set(mockAppointments.map((item) => item.id));
 
@@ -21,14 +22,18 @@ function isAppointment(value: unknown): value is Appointment {
     typeof appointment.endTime === "string" &&
     (appointment.status === "pending" ||
       appointment.status === "confirmed" ||
-      appointment.status === "cancelled") &&
+      appointment.status === "cancelled" ||
+      appointment.status === "completed") &&
     typeof appointment.createdAt === "string"
   );
 }
 
 function isAppointmentStatus(value: unknown): value is AppointmentStatus {
   return (
-    value === "pending" || value === "confirmed" || value === "cancelled"
+    value === "pending" ||
+    value === "confirmed" ||
+    value === "cancelled" ||
+    value === "completed"
   );
 }
 
@@ -75,20 +80,64 @@ function saveStatusOverrides(
   }
 }
 
+function getAppointmentEdits(): Record<string, Appointment> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(APPOINTMENT_EDITS_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+
+    const edits: Record<string, Appointment> = {};
+
+    for (const [id, value] of Object.entries(parsed)) {
+      if (typeof id === "string" && isAppointment(value)) {
+        edits[id] = value;
+      }
+    }
+
+    return edits;
+  } catch {
+    return {};
+  }
+}
+
+function saveAppointmentEdits(edits: Record<string, Appointment>): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      APPOINTMENT_EDITS_STORAGE_KEY,
+      JSON.stringify(edits)
+    );
+  } catch {
+    // Ignore quota or privacy-mode errors.
+  }
+}
+
 /** Combines mock seed data, user-created storage, and mock status overrides. */
 export function mergeAppointments(
   baseAppointments: Appointment[],
   storedAppointments: Appointment[],
-  statusOverrides: Record<string, AppointmentStatus> = {}
+  statusOverrides: Record<string, AppointmentStatus> = {},
+  appointmentEdits: Record<string, Appointment> = {}
 ): Appointment[] {
   const byId = new Map<string, Appointment>();
 
   for (const appointment of baseAppointments) {
     const override = statusOverrides[appointment.id];
-    byId.set(
-      appointment.id,
-      override ? { ...appointment, status: override } : appointment
-    );
+    const edited = appointmentEdits[appointment.id];
+    let merged = override ? { ...appointment, status: override } : appointment;
+    if (edited) {
+      merged = { ...merged, ...edited };
+    }
+    byId.set(appointment.id, merged);
   }
 
   for (const appointment of storedAppointments) {
@@ -147,6 +196,7 @@ export function clearStoredAppointments(): void {
   try {
     window.localStorage.removeItem(APPOINTMENTS_STORAGE_KEY);
     window.localStorage.removeItem(STATUS_OVERRIDES_STORAGE_KEY);
+    window.localStorage.removeItem(APPOINTMENT_EDITS_STORAGE_KEY);
   } catch {
     // Ignore storage errors.
   }
@@ -191,10 +241,32 @@ export function updateStoredAppointmentStatus(
   return stored;
 }
 
+export function updateStoredAppointment(appointment: Appointment): Appointment[] {
+  if (mockAppointmentIds.has(appointment.id)) {
+    const edits = getAppointmentEdits();
+    edits[appointment.id] = appointment;
+    saveAppointmentEdits(edits);
+    return getMergedAppointments();
+  }
+
+  const stored = getStoredAppointments();
+  const index = stored.findIndex((item) => item.id === appointment.id);
+
+  if (index >= 0) {
+    const updated = [...stored];
+    updated[index] = appointment;
+    saveStoredAppointments(updated);
+    return updated;
+  }
+
+  return stored;
+}
+
 export function getMergedAppointments(): Appointment[] {
   return mergeAppointments(
     mockAppointments,
     getStoredAppointments(),
-    getStatusOverrides()
+    getStatusOverrides(),
+    getAppointmentEdits()
   );
 }

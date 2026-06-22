@@ -10,6 +10,12 @@ const adminLinks = [
   { href: "/admin/business", label: "פרטי העסק", icon: "🏢", exact: false },
   { href: "/admin/services", label: "ניהול שירותים", icon: "✨", exact: false },
   {
+    href: "/admin/blocked-times",
+    label: "חסימות וחופשות",
+    icon: "🗓️",
+    exact: false,
+  },
+  {
     href: "/admin/appointments",
     label: "ניהול תורים",
     icon: "📋",

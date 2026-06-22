@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 
 type BaseProps = {
   variant?: ButtonVariant;
@@ -27,9 +27,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary:
     "bg-gradient-to-l from-secondary to-[#ec4899] text-white shadow-lg shadow-secondary/30 hover:shadow-xl hover:shadow-secondary/40 active:scale-[0.98] focus-visible:ring-secondary",
   outline:
-    "border-2 border-primary/18 bg-white/90 text-primary shadow-sm backdrop-blur-sm hover:border-primary/35 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-primary",
+    "border-2 border-[#F9A8D4]/35 bg-[#FFFDF8]/95 text-[#581C87] shadow-sm backdrop-blur-sm hover:border-[#BE185D]/30 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-[#BE185D]",
   ghost:
-    "bg-transparent text-[#111827] hover:bg-primary-light/70 hover:text-primary active:scale-[0.98] focus-visible:ring-primary",
+    "bg-transparent text-[#1F2937] hover:bg-[#FFF1F5] hover:text-[#BE185D] active:scale-[0.98] focus-visible:ring-[#BE185D]",
+  danger:
+    "border-2 border-red-200 bg-white text-red-700 shadow-sm hover:border-red-300 hover:bg-red-50 active:scale-[0.98] focus-visible:ring-red-400",
 };
 
 const sizeStyles = {
@@ -52,9 +54,9 @@ export default function Button({
   const combinedClassName = `${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`;
 
   if ("href" in props && props.href) {
-    const { href } = props;
+    const { href, ...linkProps } = props;
     return (
-      <Link href={href} className={combinedClassName}>
+      <Link href={href} className={combinedClassName} {...linkProps}>
         {children}
       </Link>
     );

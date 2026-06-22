@@ -1,6 +1,12 @@
-import { defaultBusinessSettings } from "@/lib/business-config";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import type { BusinessSettings } from "@/lib/types";
+import { fetchBusinessSettingsSafe } from "@/lib/supabase/fetch-business-settings";
+import type { BusinessSettings, BusinessWorkingDay } from "@/lib/types";
+import {
+  deriveLegacyFromWorkingHours,
+  normalizeBusinessSettings,
+  parseWorkingHoursJson,
+  workingHoursFromLegacy,
+} from "@/lib/working-hours";
 
 type BusinessSettingsRow = {
   id: string;
@@ -9,6 +15,7 @@ type BusinessSettingsRow = {
   end_hour: string;
   buffer_minutes: number;
   working_days: number[];
+  working_hours?: unknown;
   description?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -31,58 +38,30 @@ export type UpdateBusinessSettingsInput = {
   endHour?: string;
   bufferMinutes?: number;
   workingDays?: number[];
+  workingHours?: BusinessWorkingDay[];
 };
 
-function isMissingColumnError(error: { message?: string; code?: string }): boolean {
-  return (
-    error.code === "42703" ||
-    Boolean(error.message?.includes("does not exist"))
-  );
-}
-
-const CORE_COLUMNS =
-  "id, business_name, start_hour, end_hour, buffer_minutes, working_days";
-
-const BRANDING_COLUMNS =
-  "description, phone, email, address, logo_url, cover_image_url, primary_color";
-
-function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
-  return {
-    id: typeof row.id === "string" ? row.id : undefined,
-    businessName:
-      typeof row.business_name === "string"
-        ? row.business_name
-        : defaultBusinessSettings.businessName,
-    startHour:
-      typeof row.start_hour === "string"
-        ? row.start_hour
-        : defaultBusinessSettings.startHour,
-    endHour:
-      typeof row.end_hour === "string"
-        ? row.end_hour
-        : defaultBusinessSettings.endHour,
-    bufferMinutes:
-      typeof row.buffer_minutes === "number"
-        ? row.buffer_minutes
-        : defaultBusinessSettings.bufferMinutes,
-    workingDays: Array.isArray(row.working_days)
-      ? (row.working_days as number[])
-      : defaultBusinessSettings.workingDays,
-    description:
-      typeof row.description === "string" ? row.description : undefined,
-    phone: typeof row.phone === "string" ? row.phone : undefined,
-    email: typeof row.email === "string" ? row.email : undefined,
-    address: typeof row.address === "string" ? row.address : undefined,
-    logoUrl: typeof row.logo_url === "string" ? row.logo_url : undefined,
-    coverImageUrl:
-      typeof row.cover_image_url === "string" ? row.cover_image_url : undefined,
-    primaryColor:
-      typeof row.primary_color === "string" ? row.primary_color : undefined,
-  };
-}
-
 function mapBusinessSettingsRow(row: BusinessSettingsRow): BusinessSettings {
-  return mapPartialRow(row as unknown as Record<string, unknown>);
+  const workingHours =
+    parseWorkingHoursJson(row.working_hours) ??
+    workingHoursFromLegacy(row.working_days, row.start_hour, row.end_hour);
+
+  return normalizeBusinessSettings({
+    id: row.id,
+    businessName: row.business_name,
+    workingHours,
+    startHour: row.start_hour,
+    endHour: row.end_hour,
+    bufferMinutes: row.buffer_minutes,
+    workingDays: row.working_days,
+    description: row.description ?? undefined,
+    phone: row.phone ?? undefined,
+    email: row.email ?? undefined,
+    address: row.address ?? undefined,
+    logoUrl: row.logo_url ?? undefined,
+    coverImageUrl: row.cover_image_url ?? undefined,
+    primaryColor: row.primary_color ?? undefined,
+  });
 }
 
 function mapUpdateToRow(
@@ -114,54 +93,33 @@ function mapUpdateToRow(
   if (input.primaryColor !== undefined) {
     row.primary_color = input.primaryColor?.trim() || null;
   }
-  if (input.startHour !== undefined) {
-    row.start_hour = input.startHour;
-  }
-  if (input.endHour !== undefined) {
-    row.end_hour = input.endHour;
-  }
   if (input.bufferMinutes !== undefined) {
     row.buffer_minutes = input.bufferMinutes;
   }
-  if (input.workingDays !== undefined) {
-    row.working_days = input.workingDays;
+
+  if (input.workingHours !== undefined) {
+    const legacy = deriveLegacyFromWorkingHours(input.workingHours);
+    row.working_hours = input.workingHours;
+    row.working_days = legacy.workingDays;
+    row.start_hour = legacy.startHour;
+    row.end_hour = legacy.endHour;
+  } else {
+    if (input.startHour !== undefined) {
+      row.start_hour = input.startHour;
+    }
+    if (input.endHour !== undefined) {
+      row.end_hour = input.endHour;
+    }
+    if (input.workingDays !== undefined) {
+      row.working_days = input.workingDays;
+    }
   }
 
   return row;
 }
 
 export async function getBusinessSettings(): Promise<BusinessSettings> {
-  if (!isSupabaseConfigured()) {
-    return defaultBusinessSettings;
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    return defaultBusinessSettings;
-  }
-
-  const fullSelect = `${CORE_COLUMNS}, ${BRANDING_COLUMNS}`;
-  let { data, error } = await supabase
-    .from("business_settings")
-    .select(fullSelect)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error && isMissingColumnError(error)) {
-    ({ data, error } = await supabase
-      .from("business_settings")
-      .select(CORE_COLUMNS)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle());
-  }
-
-  if (error || !data) {
-    return defaultBusinessSettings;
-  }
-
-  return mapPartialRow(data as Record<string, unknown>);
+  return fetchBusinessSettingsSafe();
 }
 
 export async function updateBusinessSettings(
@@ -176,39 +134,55 @@ export async function updateBusinessSettings(
     return { settings: null, error: "Supabase is not configured." };
   }
 
-  const payload = mapUpdateToRow(input);
-  if (Object.keys(payload).length === 0) {
-    const current = await getBusinessSettings();
-    return { settings: current, error: null };
-  }
+  try {
+    const payload = mapUpdateToRow(input);
+    if (Object.keys(payload).length === 0) {
+      const current = await fetchBusinessSettingsSafe();
+      return { settings: current, error: null };
+    }
 
-  const { data: existing, error: fetchError } = await supabase
-    .from("business_settings")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    const { data: existing, error: fetchError } = await supabase
+      .from("business_settings")
+      .select("id")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-  if (fetchError || !existing?.id) {
+    if (fetchError || !existing?.id) {
+      return {
+        settings: null,
+        error: fetchError?.message ?? "Business settings row not found.",
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("business_settings")
+      .update(payload)
+      .eq("id", existing.id)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      return { settings: null, error: error.message };
+    }
+
+    if (!data) {
+      return {
+        settings: null,
+        error: "Business settings row not found after update.",
+      };
+    }
+
+    return {
+      settings: mapBusinessSettingsRow(data as BusinessSettingsRow),
+      error: null,
+    };
+  } catch (error) {
+    console.error("Failed to update business settings:", error);
     return {
       settings: null,
-      error: fetchError?.message ?? "Business settings row not found.",
+      error:
+        error instanceof Error ? error.message : "Failed to update settings.",
     };
   }
-
-  const { data, error } = await supabase
-    .from("business_settings")
-    .update(payload)
-    .eq("id", existing.id)
-    .select("*")
-    .single();
-
-  if (error) {
-    return { settings: null, error: error.message };
-  }
-
-  return {
-    settings: mapBusinessSettingsRow(data as BusinessSettingsRow),
-    error: null,
-  };
 }

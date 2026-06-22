@@ -3,16 +3,20 @@ import {
   calculateEndTime,
   doTimeRangesOverlap,
   getAvailableSlots,
+  isDateFullyBlocked,
   minutesToTime,
   timeToMinutes,
 } from "@/lib/availability";
 import type {
   Appointment,
+  BlockedTime,
   BusinessSettings,
   Service,
 } from "@/lib/types";
+import { workingHoursFromLegacy } from "@/lib/working-hours";
 
 const TEST_DATE = "2026-06-22";
+const SUNDAY_DATE = "2026-06-21";
 const CLOSED_DATE = "2026-06-26";
 
 const businessSettings: BusinessSettings = {
@@ -21,6 +25,18 @@ const businessSettings: BusinessSettings = {
   endHour: "18:00",
   bufferMinutes: 15,
   workingDays: [0, 1, 2, 3, 4],
+  workingHours: workingHoursFromLegacy([0, 1, 2, 3, 4], "09:00", "18:00"),
+};
+
+const perDaySettings: BusinessSettings = {
+  ...businessSettings,
+  workingHours: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+    dayOfWeek,
+    isOpen: dayOfWeek !== 6,
+    startHour: dayOfWeek === 0 ? "08:00" : dayOfWeek === 1 ? "10:00" : "09:00",
+    endHour: dayOfWeek === 0 ? "16:00" : "18:00",
+  })),
+  workingDays: [0, 1, 2, 3, 4, 5],
 };
 
 const service20: Service = {
@@ -204,6 +220,25 @@ describe("getAvailableSlots", () => {
     expect(slotStartTimes(slots)).toContain("10:30");
   });
 
+  it("does not block completed appointments", () => {
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service60,
+      appointments: [
+        createAppointment({
+          id: "completed-1",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "completed",
+        }),
+      ],
+      businessSettings,
+    });
+
+    expect(slotStartTimes(slots)).toContain("10:00");
+    expect(slotStartTimes(slots)).toContain("10:30");
+  });
+
   it("applies bufferMinutes after appointments", () => {
     const slots = getAvailableSlots({
       selectedDate: TEST_DATE,
@@ -289,5 +324,172 @@ describe("getAvailableSlots", () => {
 
     expect(slots.every((slot) => slot.isAvailable)).toBe(true);
     expect(slots[0].endTime).toBe("09:20");
+  });
+
+  it("uses Sunday 08:00-16:00 hours when configured per day", () => {
+    const slots = getAvailableSlots({
+      selectedDate: SUNDAY_DATE,
+      selectedService: service20,
+      appointments: [],
+      businessSettings: perDaySettings,
+    });
+
+    expect(slotStartTimes(slots)[0]).toBe("08:00");
+    expect(slotStartTimes(slots).at(-1)).toBe("15:30");
+    expect(slotStartTimes(slots)).not.toContain("16:00");
+  });
+
+  it("uses Monday 10:00-18:00 hours when configured per day", () => {
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service20,
+      appointments: [],
+      businessSettings: perDaySettings,
+    });
+
+    expect(slotStartTimes(slots)[0]).toBe("10:00");
+    expect(slotStartTimes(slots)).not.toContain("09:00");
+    expect(slotStartTimes(slots).at(-1)).toBe("17:30");
+  });
+
+  it("returns no slots for a closed day in per-day schedule", () => {
+    const slots = getAvailableSlots({
+      selectedDate: "2026-06-27",
+      selectedService: service20,
+      appointments: [],
+      businessSettings: perDaySettings,
+    });
+
+    expect(slots).toEqual([]);
+  });
+
+  it("returns no slots for a full-day blocked date", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "block-full",
+        startDate: TEST_DATE,
+        endDate: TEST_DATE,
+        isFullDay: true,
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    expect(isDateFullyBlocked(TEST_DATE, blockedTimes)).toBe(true);
+
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service20,
+      appointments: [],
+      businessSettings,
+      blockedTimes,
+    });
+
+    expect(slots).toEqual([]);
+  });
+
+  it("removes slots overlapping a time-range block", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "block-range",
+        startDate: TEST_DATE,
+        endDate: TEST_DATE,
+        isFullDay: false,
+        startTime: "12:00",
+        endTime: "14:00",
+        reason: "הפסקה",
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service60,
+      appointments: [],
+      businessSettings,
+      blockedTimes,
+    });
+
+    expect(slotStartTimes(slots)).not.toContain("12:00");
+    expect(slotStartTimes(slots)).not.toContain("12:30");
+    expect(slotStartTimes(slots)).not.toContain("13:00");
+    expect(slotStartTimes(slots)).not.toContain("13:30");
+    expect(slotStartTimes(slots)).toContain("11:00");
+    expect(slotStartTimes(slots)).toContain("14:00");
+  });
+
+  it("returns no slots for any date inside a full-day vacation range", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "vacation",
+        startDate: "2026-07-01",
+        endDate: "2026-07-05",
+        isFullDay: true,
+        reason: "חופשה",
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    expect(isDateFullyBlocked("2026-07-03", blockedTimes)).toBe(true);
+    expect(
+      getAvailableSlots({
+        selectedDate: "2026-07-03",
+        selectedService: service20,
+        appointments: [],
+        businessSettings,
+        blockedTimes,
+      })
+    ).toEqual([]);
+  });
+
+  it("does not block dates outside a full-day vacation range", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "vacation",
+        startDate: "2026-07-01",
+        endDate: "2026-07-05",
+        isFullDay: true,
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    expect(isDateFullyBlocked("2026-06-30", blockedTimes)).toBe(false);
+    expect(isDateFullyBlocked("2026-07-06", blockedTimes)).toBe(false);
+
+    const slots = getAvailableSlots({
+      selectedDate: "2026-06-30",
+      selectedService: service20,
+      appointments: [],
+      businessSettings,
+      blockedTimes,
+    });
+
+    expect(slots.length).toBeGreaterThan(0);
+  });
+
+  it("applies partial time blocks to each day in a multi-day range", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "lunch-range",
+        startDate: "2026-07-06",
+        endDate: "2026-07-08",
+        isFullDay: false,
+        startTime: "12:00",
+        endTime: "16:00",
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    const slots = getAvailableSlots({
+      selectedDate: "2026-07-07",
+      selectedService: service60,
+      appointments: [],
+      businessSettings,
+      blockedTimes,
+    });
+
+    expect(slotStartTimes(slots)).not.toContain("12:00");
+    expect(slotStartTimes(slots)).not.toContain("13:30");
+    expect(slotStartTimes(slots)).toContain("11:00");
+    expect(slotStartTimes(slots)).toContain("16:00");
   });
 });
