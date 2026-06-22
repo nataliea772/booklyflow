@@ -20,7 +20,13 @@ import {
   isWorkingDay,
 } from "@/lib/availability";
 import { formatBookingHoursHint } from "@/lib/appointment-edit";
+import {
+  getBookingWindowMaxDate,
+  isDateWithinBookingWindow,
+  resolveBookingWindowDays,
+} from "@/lib/booking-window";
 import { getPublicBusinessName } from "@/lib/business-config";
+import { getTodayDateString } from "@/lib/dates";
 import type { TimeSlot } from "@/lib/types";
 
 export default function BookPage() {
@@ -42,6 +48,10 @@ export default function BookPage() {
 
   const isReady =
     servicesReady && settingsReady && appointmentsReady && blockedTimesReady;
+
+  const today = getTodayDateString();
+  const bookingWindowDays = resolveBookingWindowDays(businessSettings);
+  const maxBookingDate = getBookingWindowMaxDate(today, bookingWindowDays);
 
   const businessName = getPublicBusinessName(businessSettings);
   const displaySettings = { ...businessSettings, businessName };
@@ -93,6 +103,10 @@ export default function BookPage() {
   const isFullyBlockedDay =
     Boolean(appointmentDate) &&
     isDateFullyBlocked(appointmentDate, blockedTimes);
+
+  const isBeyondBookingWindow =
+    Boolean(appointmentDate) &&
+    !isDateWithinBookingWindow(appointmentDate, today, bookingWindowDays);
 
   const hoursHint = formatBookingHoursHint(
     businessSettings,
@@ -217,7 +231,8 @@ export default function BookPage() {
                   data-testid="date-input"
                   value={appointmentDate}
                   onChange={(e) => setAppointmentDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
+                  min={today}
+                  max={maxBookingDate}
                   className="input-field ltr-value"
                   disabled={!serviceId}
                 />
@@ -226,6 +241,13 @@ export default function BookPage() {
                 {!serviceId || !appointmentDate ? (
                   <p className="rounded-2xl border border-dashed border-[#F9A8D4]/30 px-4 py-5 text-center text-sm text-[#6B7280]">
                     בחרו שירות ותאריך כדי לראות שעות פנויות.
+                  </p>
+                ) : isBeyondBookingWindow ? (
+                  <p
+                    className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]"
+                    data-testid="booking-window-message"
+                  >
+                    ניתן להזמין תור עד {bookingWindowDays} ימים קדימה
                   </p>
                 ) : isClosedDay ? (
                   <p className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]">

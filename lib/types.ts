@@ -54,6 +54,7 @@ export type BusinessSettings = {
   businessName: string;
   workingHours: BusinessWorkingDay[];
   bufferMinutes: number;
+  bookingWindowDays?: number;
   startHour: string;
   endHour: string;
   workingDays: number[];

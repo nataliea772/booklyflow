@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { filterAppointments } from "@/lib/appointment-filters";
+import {
+  applyQuickDateFilter,
+  filterAppointments,
+  filterAppointmentsWithQuickRange,
+} from "@/lib/appointment-filters";
 import { appointmentStatusLabels } from "@/lib/i18n";
 import type { Appointment } from "@/lib/types";
 
@@ -99,5 +103,67 @@ describe("filterAppointments", () => {
     });
 
     expect(result.map((item) => item.id)).toEqual(["1"]);
+  });
+});
+
+describe("applyQuickDateFilter", () => {
+  const today = "2026-06-22";
+  const appointments = [
+    createAppointment({ id: "today", appointmentDate: today }),
+    createAppointment({ id: "tomorrow", appointmentDate: "2026-06-23" }),
+    createAppointment({ id: "next-week", appointmentDate: "2026-06-29" }),
+    createAppointment({ id: "past", appointmentDate: "2026-06-20" }),
+  ];
+
+  it("filters today only", () => {
+    const result = applyQuickDateFilter(appointments, "today", today);
+    expect(result.map((item) => item.id)).toEqual(["today"]);
+  });
+
+  it("filters tomorrow only", () => {
+    const result = applyQuickDateFilter(appointments, "tomorrow", today);
+    expect(result.map((item) => item.id)).toEqual(["tomorrow"]);
+  });
+
+  it("filters the next seven days including today", () => {
+    const result = applyQuickDateFilter(appointments, "week", today);
+    expect(result.map((item) => item.id)).toEqual([
+      "today",
+      "tomorrow",
+      "next-week",
+    ]);
+  });
+
+  it("returns all appointments for the all filter", () => {
+    expect(applyQuickDateFilter(appointments, "all", today)).toHaveLength(4);
+  });
+});
+
+describe("filterAppointmentsWithQuickRange", () => {
+  const today = "2026-06-22";
+  const appointments = [
+    createAppointment({
+      id: "1",
+      customerName: "ישראל ישראלי",
+      status: "pending",
+      appointmentDate: today,
+    }),
+    createAppointment({
+      id: "2",
+      customerName: "שרה כהן",
+      status: "confirmed",
+      appointmentDate: "2026-06-23",
+    }),
+  ];
+
+  it("combines status filter with quick week filter", () => {
+    const result = filterAppointmentsWithQuickRange(
+      appointments,
+      { searchQuery: "", status: "confirmed", date: "" },
+      "week",
+      today
+    );
+
+    expect(result.map((item) => item.id)).toEqual(["2"]);
   });
 });

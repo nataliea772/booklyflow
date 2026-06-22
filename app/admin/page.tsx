@@ -10,6 +10,7 @@ import StatCard from "@/components/StatCard";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useServices } from "@/hooks/useServices";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
+import { groupAppointmentsByDay } from "@/lib/appointment-groups";
 import {
   calculateExpectedRevenue,
   getUpcomingAppointments,
@@ -56,8 +57,13 @@ export default function AdminDashboardPage() {
   }, [appointments, today, services]);
 
   const upcomingAppointments = useMemo(
-    () => getUpcomingAppointments(appointments, today, 5),
+    () => getUpcomingAppointments(appointments, today, 7),
     [appointments, today]
+  );
+
+  const upcomingGroups = useMemo(
+    () => groupAppointmentsByDay(upcomingAppointments),
+    [upcomingAppointments]
   );
 
   const todayPending = appointments.filter(
@@ -226,32 +232,41 @@ export default function AdminDashboardPage() {
                 />
               </div>
             ) : (
-              <ul className="mt-8 space-y-3">
-                {upcomingAppointments.map((appointment) => (
-                  <li
-                    key={appointment.id}
-                    className="list-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-bold text-[#111827]">
-                        {appointment.customerName}
-                      </p>
-                      <p className="text-sm text-primary">
-                        {getServiceName(services, appointment.serviceId)}
-                      </p>
-                    </div>
-                    <div className="text-sm text-muted">
-                      <p>{formatShortDate(appointment.appointmentDate)}</p>
-                      <p className="ltr-value">
-                        {formatTimeLabel(appointment.startTime)}
-                      </p>
-                      <p className="mt-1 font-semibold text-[#111827]">
-                        {appointmentStatusLabels[appointment.status]}
-                      </p>
-                    </div>
-                  </li>
+              <div className="mt-8 space-y-6">
+                {upcomingGroups.map((group) => (
+                  <div key={group.date}>
+                    <p className="mb-3 text-sm font-bold text-primary">
+                      {group.label}
+                    </p>
+                    <ul className="space-y-3">
+                      {group.appointments.map((appointment) => (
+                        <li
+                          key={appointment.id}
+                          className="list-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                          data-testid={`dashboard-upcoming-${appointment.id}`}
+                        >
+                          <div>
+                            <p className="font-bold text-[#111827]">
+                              {appointment.customerName}
+                            </p>
+                            <p className="text-sm text-primary">
+                              {getServiceName(services, appointment.serviceId)}
+                            </p>
+                          </div>
+                          <div className="text-sm text-muted">
+                            <p className="ltr-value">
+                              {formatTimeLabel(appointment.startTime)}
+                            </p>
+                            <p className="mt-1 font-semibold text-[#111827]">
+                              {appointmentStatusLabels[appointment.status]}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </Card>
         </div>

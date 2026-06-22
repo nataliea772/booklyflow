@@ -9,6 +9,11 @@ import EmptyState from "@/components/EmptyState";
 import ImageUploadField from "@/components/ImageUploadField";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { HEBREW_WEEKDAYS } from "@/lib/appointment-edit";
+import {
+  MAX_BOOKING_WINDOW_DAYS,
+  MIN_BOOKING_WINDOW_DAYS,
+  normalizeBookingWindowDays,
+} from "@/lib/booking-window";
 import type { BusinessWorkingDay } from "@/lib/types";
 import { createDefaultWorkingHours } from "@/lib/working-hours";
 import {
@@ -30,6 +35,7 @@ export default function BusinessSettingsPage() {
     createDefaultWorkingHours()
   );
   const [bufferMinutes, setBufferMinutes] = useState(15);
+  const [bookingWindowDays, setBookingWindowDays] = useState(30);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,6 +51,7 @@ export default function BusinessSettingsPage() {
     setPrimaryColor(settings.primaryColor ?? "#6d28d9");
     setWorkingHours(settings.workingHours);
     setBufferMinutes(settings.bufferMinutes);
+    setBookingWindowDays(settings.bookingWindowDays ?? 30);
   }, [settings]);
 
   function updateDayHours(
@@ -93,6 +100,7 @@ export default function BusinessSettingsPage() {
         coverImageUrl,
         workingHours,
         bufferMinutes,
+        bookingWindowDays: normalizeBookingWindowDays(bookingWindowDays),
       });
 
       if (result.error) {
@@ -407,6 +415,31 @@ export default function BusinessSettingsPage() {
                   data-testid="buffer-minutes-input"
                   required
                 />
+              </div>
+
+              <div className="max-w-xs">
+                <label
+                  htmlFor="bookingWindowDays"
+                  className="mb-2.5 block text-sm font-bold text-[#1F2937]"
+                >
+                  פתיחת הזמנות קדימה
+                </label>
+                <input
+                  id="bookingWindowDays"
+                  type="number"
+                  min={MIN_BOOKING_WINDOW_DAYS}
+                  max={MAX_BOOKING_WINDOW_DAYS}
+                  value={bookingWindowDays}
+                  onChange={(e) =>
+                    setBookingWindowDays(Number(e.target.value))
+                  }
+                  className="input-field ltr-value"
+                  data-testid="booking-window-days-input"
+                  required
+                />
+                <p className="mt-2 text-xs text-muted">
+                  מספר הימים קדימה שבהם לקוחות יכולות לקבוע תור
+                </p>
               </div>
 
               <Button type="submit" size="lg" disabled={isSaving}>

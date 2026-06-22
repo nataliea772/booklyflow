@@ -12,19 +12,20 @@ import { useBlockedTimes } from "@/hooks/useBlockedTimes";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { useServices } from "@/hooks/useServices";
 import { hasScheduleChanged } from "@/lib/appointment-schedule";
-import { isAppointmentPast } from "@/lib/appointment-edit";
 import {
-  filterAppointments,
+  filterAppointmentsWithQuickRange,
+  type AppointmentQuickFilter,
   type AppointmentStatusFilter,
 } from "@/lib/appointment-filters";
+import { groupAppointmentsByDay } from "@/lib/appointment-groups";
+import { isAppointmentPast } from "@/lib/appointment-edit";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
 import { getTodayDateString } from "@/lib/dates";
 import {
   appointmentStatusLabels,
-  formatShortDate,
 } from "@/lib/i18n";
 import { sendAppointmentSms } from "@/lib/notifications/send-appointment-sms";
-import type { AppointmentStatus } from "@/lib/types";
+import type { Appointment, AppointmentStatus } from "@/lib/types";
 
 type ConfirmNotice = {
   type: "success" | "warning";
@@ -64,6 +65,21 @@ const STATUS_FILTER_OPTIONS: {
   { value: "completed", label: appointmentStatusLabels.completed },
 ];
 
+const QUICK_FILTER_OPTIONS: {
+  value: AppointmentQuickFilter;
+  label: string;
+  testId: string;
+}[] = [
+  { value: "today", label: "היום", testId: "appointment-quick-filter-today" },
+  {
+    value: "tomorrow",
+    label: "מחר",
+    testId: "appointment-quick-filter-tomorrow",
+  },
+  { value: "week", label: "השבוע", testId: "appointment-quick-filter-week" },
+  { value: "all", label: "הכל", testId: "appointment-quick-filter-all" },
+];
+
 export default function AppointmentsPage() {
   const { appointments, updateAppointment, updateAppointmentStatus, isReady } =
     useAppointments();
@@ -76,16 +92,27 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatusFilter>("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [quickFilter, setQuickFilter] = useState<AppointmentQuickFilter>("all");
   const today = getTodayDateString();
 
   const filteredAppointments = useMemo(
     () =>
-      filterAppointments(appointments, {
-        searchQuery,
-        status: statusFilter,
-        date: dateFilter,
-      }),
-    [appointments, searchQuery, statusFilter, dateFilter]
+      filterAppointmentsWithQuickRange(
+        appointments,
+        {
+          searchQuery,
+          status: statusFilter,
+          date: dateFilter,
+        },
+        quickFilter,
+        today
+      ),
+    [appointments, searchQuery, statusFilter, dateFilter, quickFilter, today]
+  );
+
+  const groupedAppointments = useMemo(
+    () => groupAppointmentsByDay(filteredAppointments),
+    [filteredAppointments]
   );
 
   const statusCounts = useMemo(
@@ -197,6 +224,150 @@ export default function AppointmentsPage() {
     );
   }
 
+  function handleQuickFilterChange(nextFilter: AppointmentQuickFilter) {
+    setQuickFilter(nextFilter);
+    setDateFilter("");
+  }
+
+  function handleDateFilterChange(value: string) {
+    setDateFilter(value);
+    if (value) {
+      setQuickFilter("all");
+    }
+  }
+
+  function renderAppointmentCard(appointment: Appointment) {
+    const status = statusStyles[appointment.status];
+    const canConfirm = appointment.status === "pending";
+    const canComplete =
+      appointment.status === "confirmed" ||
+      appointment.status === "pending";
+    const canCancel =
+      appointment.status === "pending" ||
+      appointment.status === "confirmed";
+    const isPast = isAppointmentPast(appointment, today);
+    const isEditing = editingId === appointment.id;
+
+    return (
+      <div
+        key={appointment.id}
+        className="list-card"
+        data-testid={`appointment-row-${appointment.id}`}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-bl from-primary to-[#8b5cf6] text-sm font-bold text-white shadow-md shadow-primary/25">
+              {appointment.customerName.charAt(0)}
+            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-lg font-bold text-[#111827]">
+                  {appointment.customerName}
+                </p>
+                {isPast && (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 ring-1 ring-gray-200">
+                    תור שעבר
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm font-medium text-primary">
+                {getServiceName(services, appointment.serviceId)}
+              </p>
+              {appointment.notes && !isEditing && (
+                <p className="mt-1.5 text-sm text-muted">{appointment.notes}</p>
+              )}
+              {appointment.adminNote && !isEditing && (
+                <p className="mt-1.5 rounded-xl border border-primary/10 bg-primary-soft/30 px-3 py-2 text-sm text-[#111827]">
+                  <span className="font-bold text-primary">הערת מנהל:</span>{" "}
+                  {appointment.adminNote}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+            <div className="rounded-xl bg-primary-soft/60 px-4 py-2.5">
+              <p className="text-sm font-bold text-[#111827] ltr-value">
+                {formatTimeLabel(appointment.startTime)} –{" "}
+                {formatTimeLabel(appointment.endTime)}
+              </p>
+            </div>
+            <p className="text-sm font-medium text-muted ltr-value">
+              {appointment.customerPhone}
+            </p>
+            <span
+              data-testid={`status-badge-${appointment.id}`}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ring-1 ring-inset ${status.className}`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${status.dot}`}
+                aria-hidden="true"
+              />
+              {appointmentStatusLabels[appointment.status]}
+            </span>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setEditingId(isEditing ? null : appointment.id)
+                }
+                data-testid={`edit-appointment-${appointment.id}`}
+              >
+                {isEditing ? "סגירה" : "עריכה"}
+              </Button>
+              {canConfirm && (
+                <Button
+                  size="sm"
+                  data-testid={`confirm-appointment-${appointment.id}`}
+                  disabled={confirmingId === appointment.id}
+                  onClick={() => handleConfirm(appointment.id)}
+                >
+                  {confirmingId === appointment.id ? "מאשר…" : "אישור"}
+                </Button>
+              )}
+              {canComplete && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-testid={`complete-appointment-${appointment.id}`}
+                  onClick={() =>
+                    updateAppointmentStatus(appointment.id, "completed")
+                  }
+                >
+                  סימון כהושלם
+                </Button>
+              )}
+              {canCancel && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCancel(appointment.id)}
+                >
+                  ביטול
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {isEditing && (
+          <AppointmentEditForm
+            appointment={appointment}
+            services={services}
+            appointments={appointments}
+            businessSettings={businessSettings}
+            blockedTimes={blockedTimes}
+            onSave={(input) => handleSaveEdit(appointment.id, input)}
+            onCancel={() => setEditingId(null)}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (!isReady) {
     return (
       <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
@@ -268,6 +439,28 @@ export default function AppointmentsPage() {
               className="mb-6 grid gap-4 rounded-2xl border border-primary/10 bg-white/80 p-4 sm:grid-cols-2 lg:grid-cols-4"
               data-testid="appointments-filter-panel"
             >
+              <div className="sm:col-span-2 lg:col-span-4">
+                <p className="mb-2 block text-sm font-bold text-[#111827]">
+                  סינון מהיר
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_FILTER_OPTIONS.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      size="sm"
+                      variant={
+                        quickFilter === option.value ? "primary" : "outline"
+                      }
+                      data-testid={option.testId}
+                      onClick={() => handleQuickFilterChange(option.value)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               <div className="sm:col-span-2 lg:col-span-2">
                 <label
                   htmlFor="appointment-search"
@@ -322,7 +515,7 @@ export default function AppointmentsPage() {
                     id="appointment-date-filter"
                     type="date"
                     value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
+                    onChange={(e) => handleDateFilterChange(e.target.value)}
                     className="input-field ltr-value min-w-0 flex-1"
                     data-testid="appointment-date-filter"
                   />
@@ -331,7 +524,10 @@ export default function AppointmentsPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setDateFilter("")}
+                      onClick={() => {
+                        setDateFilter("");
+                        setQuickFilter("all");
+                      }}
                       data-testid="appointment-date-filter-clear"
                     >
                       ניקוי
@@ -348,152 +544,29 @@ export default function AppointmentsPage() {
                 description="נסו לשנות את מילות החיפוש, הסטטוס או התאריך."
               />
             ) : (
-            <div className="space-y-4">
-              {filteredAppointments.map((appointment) => {
-                const status = statusStyles[appointment.status];
-                const canConfirm = appointment.status === "pending";
-                const canComplete =
-                  appointment.status === "confirmed" ||
-                  appointment.status === "pending";
-                const canCancel =
-                  appointment.status === "pending" ||
-                  appointment.status === "confirmed";
-                const isPast = isAppointmentPast(appointment, today);
-                const isEditing = editingId === appointment.id;
+            <div className="space-y-8">
+              {groupedAppointments.map((group) => (
+                <section
+                  key={group.date}
+                  className="space-y-4"
+                  data-testid={`appointment-day-group-${group.date}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/10 pb-3">
+                    <h3 className="text-lg font-extrabold text-[#111827]">
+                      {group.label}
+                    </h3>
+                    <Badge variant="neutral">
+                      {group.appointments.length} תורים
+                    </Badge>
+                  </div>
 
-                return (
-                  <div
-                    key={appointment.id}
-                    className="list-card"
-                    data-testid={`appointment-row-${appointment.id}`}
-                  >
-                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex items-start gap-4">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-bl from-primary to-[#8b5cf6] text-sm font-bold text-white shadow-md shadow-primary/25">
-                          {appointment.customerName.charAt(0)}
-                        </span>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-lg font-bold text-[#111827]">
-                              {appointment.customerName}
-                            </p>
-                            {isPast && (
-                              <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 ring-1 ring-gray-200">
-                                תור שעבר
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-1 text-sm font-medium text-primary">
-                            {getServiceName(services, appointment.serviceId)}
-                          </p>
-                          {appointment.notes && !isEditing && (
-                            <p className="mt-1.5 text-sm text-muted">
-                              {appointment.notes}
-                            </p>
-                          )}
-                          {appointment.adminNote && !isEditing && (
-                            <p className="mt-1.5 rounded-xl border border-primary/10 bg-primary-soft/30 px-3 py-2 text-sm text-[#111827]">
-                              <span className="font-bold text-primary">
-                                הערת מנהל:
-                              </span>{" "}
-                              {appointment.adminNote}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-4 lg:gap-6">
-                        <div className="rounded-xl bg-primary-soft/60 px-4 py-2.5">
-                          <p className="text-sm font-bold text-[#111827]">
-                            {formatShortDate(appointment.appointmentDate)}
-                          </p>
-                          <p className="text-sm text-muted ltr-value">
-                            {formatTimeLabel(appointment.startTime)} –{" "}
-                            {formatTimeLabel(appointment.endTime)}
-                          </p>
-                        </div>
-                        <p className="text-sm font-medium text-muted ltr-value">
-                          {appointment.customerPhone}
-                        </p>
-                        <span
-                          data-testid={`status-badge-${appointment.id}`}
-                          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ring-1 ring-inset ${status.className}`}
-                        >
-                          <span
-                            className={`h-2 w-2 rounded-full ${status.dot}`}
-                            aria-hidden="true"
-                          />
-                          {appointmentStatusLabels[appointment.status]}
-                        </span>
-
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setEditingId(isEditing ? null : appointment.id)
-                            }
-                            data-testid={`edit-appointment-${appointment.id}`}
-                          >
-                            {isEditing ? "סגירה" : "עריכה"}
-                          </Button>
-                          {canConfirm && (
-                            <Button
-                              size="sm"
-                              data-testid={`confirm-appointment-${appointment.id}`}
-                              disabled={confirmingId === appointment.id}
-                              onClick={() => handleConfirm(appointment.id)}
-                            >
-                              {confirmingId === appointment.id
-                                ? "מאשר…"
-                                : "אישור"}
-                            </Button>
-                          )}
-                          {canComplete && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              data-testid={`complete-appointment-${appointment.id}`}
-                              onClick={() =>
-                                updateAppointmentStatus(
-                                  appointment.id,
-                                  "completed"
-                                )
-                              }
-                            >
-                              סימון כהושלם
-                            </Button>
-                          )}
-                          {canCancel && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleCancel(appointment.id)}
-                            >
-                              ביטול
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <AppointmentEditForm
-                        appointment={appointment}
-                        services={services}
-                        appointments={appointments}
-                        businessSettings={businessSettings}
-                        blockedTimes={blockedTimes}
-                        onSave={(input) =>
-                          handleSaveEdit(appointment.id, input)
-                        }
-                        onCancel={() => setEditingId(null)}
-                      />
+                  <div className="space-y-4">
+                    {group.appointments.map((appointment) =>
+                      renderAppointmentCard(appointment)
                     )}
                   </div>
-                );
-              })}
+                </section>
+              ))}
             </div>
             )}
           </Card>

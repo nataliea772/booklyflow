@@ -186,6 +186,12 @@ For **SMS event tracking** (confirm, cancel, reschedule notifications), run:
 lib/supabase/migrations/009_sms_event_tracking.sql
 ```
 
+For **booking window** (how far ahead customers can book), run:
+
+```
+lib/supabase/migrations/010_booking_window_and_daily_appointments.sql
+```
+
 ### 3. Configure environment variables
 
 Create `.env.local` in the project root:

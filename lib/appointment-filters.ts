@@ -1,6 +1,9 @@
+import { addDaysToDateString } from "@/lib/booking-window";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 
 export type AppointmentStatusFilter = AppointmentStatus | "all";
+
+export type AppointmentQuickFilter = "all" | "today" | "tomorrow" | "week";
 
 export type AppointmentFilters = {
   searchQuery: string;
@@ -36,4 +39,44 @@ export function filterAppointments(
 
     return nameMatch || phoneMatch;
   });
+}
+
+export function applyQuickDateFilter(
+  appointments: Appointment[],
+  quickFilter: AppointmentQuickFilter,
+  today: string
+): Appointment[] {
+  if (quickFilter === "all") {
+    return appointments;
+  }
+
+  if (quickFilter === "today") {
+    return appointments.filter(
+      (appointment) => appointment.appointmentDate === today
+    );
+  }
+
+  if (quickFilter === "tomorrow") {
+    const tomorrow = addDaysToDateString(today, 1);
+    return appointments.filter(
+      (appointment) => appointment.appointmentDate === tomorrow
+    );
+  }
+
+  const weekEnd = addDaysToDateString(today, 7);
+  return appointments.filter(
+    (appointment) =>
+      appointment.appointmentDate >= today &&
+      appointment.appointmentDate <= weekEnd
+  );
+}
+
+export function filterAppointmentsWithQuickRange(
+  appointments: Appointment[],
+  filters: AppointmentFilters,
+  quickFilter: AppointmentQuickFilter,
+  today: string
+): Appointment[] {
+  const filtered = filterAppointments(appointments, filters);
+  return applyQuickDateFilter(filtered, quickFilter, today);
 }

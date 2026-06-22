@@ -37,6 +37,7 @@ create table if not exists business_settings (
   start_hour text not null,
   end_hour text not null,
   buffer_minutes integer not null default 15,
+  booking_window_days integer default 30,
   working_days integer[] not null default '{0,1,2,3,4}',
   working_hours jsonb,
   description text,

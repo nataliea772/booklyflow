@@ -1,3 +1,4 @@
+import { DEFAULT_BOOKING_WINDOW_DAYS } from "./booking-window";
 import type { BusinessSettings } from "./types";
 import {
   createDefaultWorkingHours,
@@ -14,6 +15,7 @@ export const defaultBusinessSettings: BusinessSettings = {
   businessName: PUBLIC_BUSINESS_FALLBACK_NAME,
   workingHours: defaultWorkingHours,
   bufferMinutes: 15,
+  bookingWindowDays: DEFAULT_BOOKING_WINDOW_DAYS,
   startHour: defaultLegacy.startHour,
   endHour: defaultLegacy.endHour,
   workingDays: defaultLegacy.workingDays,

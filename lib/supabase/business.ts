@@ -1,5 +1,6 @@
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchBusinessSettingsSafe } from "@/lib/supabase/fetch-business-settings";
+import { normalizeBookingWindowDays } from "@/lib/booking-window";
 import type { BusinessSettings, BusinessWorkingDay } from "@/lib/types";
 import {
   deriveLegacyFromWorkingHours,
@@ -14,6 +15,7 @@ type BusinessSettingsRow = {
   start_hour: string;
   end_hour: string;
   buffer_minutes: number;
+  booking_window_days?: number | null;
   working_days: number[];
   working_hours?: unknown;
   description?: string | null;
@@ -37,6 +39,7 @@ export type UpdateBusinessSettingsInput = {
   startHour?: string;
   endHour?: string;
   bufferMinutes?: number;
+  bookingWindowDays?: number;
   workingDays?: number[];
   workingHours?: BusinessWorkingDay[];
 };
@@ -53,6 +56,7 @@ function mapBusinessSettingsRow(row: BusinessSettingsRow): BusinessSettings {
     startHour: row.start_hour,
     endHour: row.end_hour,
     bufferMinutes: row.buffer_minutes,
+    bookingWindowDays: normalizeBookingWindowDays(row.booking_window_days),
     workingDays: row.working_days,
     description: row.description ?? undefined,
     phone: row.phone ?? undefined,
@@ -95,6 +99,11 @@ function mapUpdateToRow(
   }
   if (input.bufferMinutes !== undefined) {
     row.buffer_minutes = input.bufferMinutes;
+  }
+  if (input.bookingWindowDays !== undefined) {
+    row.booking_window_days = normalizeBookingWindowDays(
+      input.bookingWindowDays
+    );
   }
 
   if (input.workingHours !== undefined) {

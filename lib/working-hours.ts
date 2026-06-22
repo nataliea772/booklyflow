@@ -1,3 +1,4 @@
+import { normalizeBookingWindowDays } from "@/lib/booking-window";
 import type { BusinessSettings, BusinessWorkingDay } from "@/lib/types";
 
 const DEFAULT_WORKING_DAYS = [0, 1, 2, 3, 4];
@@ -111,6 +112,7 @@ export function normalizeBusinessSettings(
   return {
     ...settings,
     workingHours,
+    bookingWindowDays: normalizeBookingWindowDays(settings.bookingWindowDays),
     workingDays: legacy.workingDays,
     startHour: legacy.startHour,
     endHour: legacy.endHour,

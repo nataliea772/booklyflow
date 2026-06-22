@@ -234,8 +234,8 @@ body {
 }
 
 .boutique-nav {
-  @apply border-b bg-[#FFFDF8]/90 backdrop-blur-xl;
-  border-color: rgba(249, 168, 212, 0.25);
+  @apply border-b bg-[#FFFDF8]/92 shadow-sm backdrop-blur-xl;
+  border-color: rgba(249, 168, 212, 0.28);
 }
 
 .cover-overlay {

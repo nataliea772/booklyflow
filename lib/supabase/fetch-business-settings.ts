@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { defaultBusinessSettings } from "@/lib/business-config";
+import { normalizeBookingWindowDays } from "@/lib/booking-window";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { BusinessSettings } from "@/lib/types";
 import {
@@ -51,6 +52,11 @@ function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
       typeof row.buffer_minutes === "number"
         ? row.buffer_minutes
         : defaultBusinessSettings.bufferMinutes,
+    bookingWindowDays: normalizeBookingWindowDays(
+      typeof row.booking_window_days === "number"
+        ? row.booking_window_days
+        : defaultBusinessSettings.bookingWindowDays
+    ),
     workingDays,
     description:
       typeof row.description === "string" ? row.description : undefined,
@@ -70,13 +76,22 @@ function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
 async function fetchBusinessSettingsFromClient(
   supabase: SupabaseClient
 ): Promise<BusinessSettings> {
-  const fullSelect = `${CORE_COLUMNS}, working_hours, ${BRANDING_COLUMNS}`;
+  const fullSelect = `${CORE_COLUMNS}, working_hours, booking_window_days, ${BRANDING_COLUMNS}`;
   let { data, error } = await supabase
     .from("business_settings")
     .select(fullSelect)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  if (error && isMissingColumnError(error)) {
+    ({ data, error } = await supabase
+      .from("business_settings")
+      .select(`${CORE_COLUMNS}, working_hours, ${BRANDING_COLUMNS}`)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle());
+  }
 
   if (error && isMissingColumnError(error)) {
     ({ data, error } = await supabase
