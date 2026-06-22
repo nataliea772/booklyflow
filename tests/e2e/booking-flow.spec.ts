@@ -1,4 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import {
+  getAdminAuthSkipReason,
+  loginAsAdminIfRequired,
+} from "./helpers/auth";
 
 const STORAGE_KEYS = [
   "booklyflow-appointments",
@@ -53,9 +57,13 @@ async function selectServiceAndDate(page: Page, appointmentDate: string) {
 
 test.describe("BooklyFlow booking flow", () => {
   test("books an appointment and confirms it in admin", async ({ page }) => {
+    const skipReason = getAdminAuthSkipReason();
+    test.skip(Boolean(skipReason), skipReason);
+
     const appointmentDate = getE2EWorkingDate();
 
     await clearAppStorage(page);
+    await loginAsAdminIfRequired(page);
 
     await page.goto("/admin");
     const pendingBefore = Number(

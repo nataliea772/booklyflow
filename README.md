@@ -20,6 +20,7 @@ A full-stack appointment scheduling and automation platform for small businesses
 - **Admin dashboard** — Live stats for today’s appointments, pending, confirmed, and revenue
 - **Confirm / cancel flow** — Manage appointment status from the admin panel
 - **Supabase persistence** — PostgreSQL-backed appointments and services when configured
+- **Admin authentication** — Supabase Auth protects `/admin/*` when configured
 - **LocalStorage demo mode** — Falls back to in-browser persistence when Supabase env vars are missing
 - **Unit tests with Vitest** — 23 tests covering scheduling logic and storage
 - **E2E tests with Playwright** — Full browser tests for booking and admin workflows
@@ -35,6 +36,7 @@ A full-stack appointment scheduling and automation platform for small businesses
 | Styling | [Tailwind CSS](https://tailwindcss.com) |
 | UI | [React](https://react.dev) |
 | Database | [Supabase](https://supabase.com) (PostgreSQL) |
+| Authentication | Supabase Auth (admin routes) |
 | Unit tests | [Vitest](https://vitest.dev) |
 | E2E tests | [Playwright](https://playwright.dev) |
 | Demo fallback | `localStorage` |
@@ -49,11 +51,13 @@ booklyflow/
 ├── app/                    # Next.js App Router pages
 │   ├── page.tsx            # Landing page
 │   ├── book/               # Customer booking flow
-│   └── admin/              # Dashboard, appointments, services
+│   ├── login/              # Admin login (Supabase Auth)
+│   └── admin/              # Dashboard, appointments, services (protected)
 ├── components/             # Reusable UI (Navbar, Card, Button, StatCard, …)
 ├── hooks/
 │   ├── useAppointments.ts  # Appointments (Supabase or localStorage)
-│   └── useServices.ts      # Services (Supabase or mock fallback)
+│   ├── useServices.ts      # Services (Supabase or mock fallback)
+│   └── useAuth.ts          # Supabase Auth session for admin
 ├── lib/
 │   ├── types.ts            # Service, Appointment, BusinessSettings, TimeSlot
 │   ├── availability.ts     # Scheduling engine (slots, overlap, buffer)
@@ -61,6 +65,7 @@ booklyflow/
 │   ├── mock-data.ts        # Seed data for demo mode
 │   └── supabase/
 │       ├── client.ts       # Browser Supabase client + isSupabaseConfigured
+│       ├── auth.ts         # signInWithEmail, signOut, getCurrentUser
 │       ├── schema.sql      # Tables, RLS policies, and seed data
 │       ├── appointments.ts # getAppointments, createAppointment, updateStatus
 │       └── services.ts     # getServices
@@ -76,10 +81,11 @@ booklyflow/
 | Route | Description |
 |---|---|
 | `/` | Marketing landing page with hero, features, and CTA |
-| `/book` | Customer booking form with live availability |
-| `/admin` | Dashboard with dynamic stats |
-| `/admin/appointments` | Appointment list with confirm / cancel actions |
-| `/admin/services` | Service catalog and add-service form |
+| `/book` | Customer booking form with live availability (public) |
+| `/login` | Admin sign-in when Supabase is configured |
+| `/admin` | Dashboard with dynamic stats (protected) |
+| `/admin/appointments` | Appointment list with confirm / cancel actions (protected) |
+| `/admin/services` | Service catalog and add-service form (protected) |
 
 ### Scheduling engine (`lib/availability.ts`)
 
@@ -97,7 +103,8 @@ Pure TypeScript functions that power slot generation:
 
 - Appointments and services load from PostgreSQL via `@supabase/supabase-js`
 - Bookings and status updates write to the `appointments` table
-- Anonymous RLS policies allow read/write until authentication is added
+- **Admin routes require login** via Supabase Auth (`/login`)
+- Public `/book` remains open for customer bookings without login
 
 **Demo mode** (when env vars are missing):
 
@@ -144,6 +151,14 @@ npm run dev
 
 With env vars set, bookings and admin actions persist to Supabase. Remove the variables (or leave them empty) to use **localStorage demo mode** — useful for local development and automated tests without a database.
 
+### 5. Enable admin authentication
+
+1. In Supabase, go to **Authentication → Providers** and enable **Email**.
+2. Go to **Authentication → Users** and **Add user** with an email and password for your admin account.
+3. Visit **`/login`** in the app and sign in — you will be redirected to **`/admin`**.
+
+Admin pages (`/admin`, `/admin/services`, `/admin/appointments`) redirect to `/login` when Supabase is configured and you are not signed in. In demo mode (no Supabase env vars), admin pages stay open without login.
+
 ---
 
 ## Testing
@@ -156,7 +171,21 @@ BooklyFlow has automated coverage at both the logic and browser layers.
 | Playwright E2E | **2** | Full booking flow, double-booking prevention |
 | TypeScript build | ✓ | Strict type-checking via `next build` |
 
-E2E tests build and start the app on port **3001** in **demo mode** (`NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE=true`) so they stay reliable without a live database — even when `.env.local` has Supabase credentials.
+E2E tests build and start the app on port **3001** in **demo mode** (`NEXT_PUBLIC_BOOKLYFLOW_DEMO_MODE=true`) so they stay reliable without a live database — even when `.env.local` has Supabase credentials. Unit tests do not depend on Supabase Auth.
+
+### E2E admin credentials (optional)
+
+Default E2E runs in demo mode and does **not** require admin login. To run E2E against a Supabase-enabled build with auth protection, set:
+
+```env
+E2E_USE_SUPABASE_AUTH=true
+E2E_ADMIN_EMAIL=your-admin@example.com
+E2E_ADMIN_PASSWORD=your-admin-password
+```
+
+If `E2E_USE_SUPABASE_AUTH=true` but `E2E_ADMIN_EMAIL` or `E2E_ADMIN_PASSWORD` is missing, admin-dependent E2E tests are skipped with a clear message. **Do not commit real credentials** — use a local `.env` file or CI secrets only.
+
+The double-booking E2E test only uses `/book` and does not require admin credentials.
 
 ### Commands
 
@@ -203,8 +232,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Quick tour
 
 1. Visit **`/book`** — select a service, date, and available time slot, then submit a booking
-2. Visit **`/admin/appointments`** — find your booking and click **Confirm**
-3. Visit **`/admin`** — see updated pending, confirmed, and revenue stats
+2. Visit **`/login`** (Supabase mode) or **`/admin`** (demo mode) — sign in if required
+3. Visit **`/admin/appointments`** — find your booking and click **Confirm**
+4. Visit **`/admin`** — see updated pending, confirmed, and revenue stats
 
 Use **Reset demo data** on the admin pages to clear `localStorage` and restore seed data (demo mode only).
 
@@ -224,7 +254,7 @@ Use **Reset demo data** on the admin pages to clear `localStorage` and restore s
 
 ## Future Improvements
 
-- [ ] **Authentication** — Business owner and customer login
+- [ ] **Customer accounts** — Optional login for booking history
 - [ ] **Email reminders** — Automated confirmation and reminder emails
 - [ ] **Google Calendar** — Two-way calendar sync
 - [ ] **Blocked times UI** — Admin management for `blocked_times` table

@@ -46,7 +46,8 @@ create table if not exists blocked_times (
   created_at timestamptz default now()
 );
 
--- Row Level Security (anonymous access until auth is added)
+-- Row Level Security (anonymous booking + authenticated admin access)
+-- Admin routes are protected in the Next.js app; public booking still uses the anon key.
 alter table services enable row level security;
 alter table appointments enable row level security;
 alter table business_settings enable row level security;
@@ -116,3 +117,9 @@ values (
   15,
   '{0,1,2,3,4}'
 );
+
+-- Admin authentication
+-- 1. In Supabase: Authentication → Providers → enable Email.
+-- 2. Authentication → Users → Add user (email + password) for your admin account.
+-- 3. Admin pages (/admin/*) require login when Supabase env vars are configured.
+-- 4. Public routes (/ and /book) remain open without login.
