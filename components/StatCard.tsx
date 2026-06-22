@@ -4,6 +4,7 @@ type StatCardProps = {
   icon: string;
   trend?: string;
   variant?: "primary" | "amber" | "emerald" | "secondary";
+  testId?: string;
 };
 
 const variantConfig = {
@@ -35,11 +36,15 @@ export default function StatCard({
   icon,
   trend,
   variant = "primary",
+  testId,
 }: StatCardProps) {
   const config = variantConfig[variant];
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-primary/10 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 card-elevated hover:shadow-[var(--card-shadow-hover)]">
+    <div
+      data-testid={testId}
+      className="group relative overflow-hidden rounded-3xl border border-primary/10 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 card-elevated hover:shadow-[var(--card-shadow-hover)]"
+    >
       <div
         className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${config.glow} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
       />

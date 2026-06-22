@@ -99,6 +99,7 @@ export default function AdminDashboardPage() {
             icon="📅"
             trend="Scheduled for today"
             variant="primary"
+            testId="dashboard-stat-today"
           />
           <StatCard
             label="Pending"
@@ -106,6 +107,7 @@ export default function AdminDashboardPage() {
             icon="⏳"
             trend="Awaiting confirmation"
             variant="amber"
+            testId="dashboard-stat-pending"
           />
           <StatCard
             label="Confirmed"
@@ -113,6 +115,7 @@ export default function AdminDashboardPage() {
             icon="✅"
             trend="All confirmed bookings"
             variant="emerald"
+            testId="dashboard-stat-confirmed"
           />
           <StatCard
             label="Revenue"
@@ -120,6 +123,7 @@ export default function AdminDashboardPage() {
             icon="💰"
             trend="From confirmed appointments"
             variant="secondary"
+            testId="dashboard-stat-revenue"
           />
         </div>
 

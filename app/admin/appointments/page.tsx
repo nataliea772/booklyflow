@@ -110,7 +110,11 @@ export default function AppointmentsPage() {
                 appointment.status === "confirmed";
 
               return (
-                <div key={appointment.id} className="list-card">
+                <div
+                  key={appointment.id}
+                  className="list-card"
+                  data-testid={`appointment-row-${appointment.id}`}
+                >
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-start gap-4">
                       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[#9333ea] text-sm font-bold text-white shadow-md shadow-primary/25">
@@ -145,6 +149,7 @@ export default function AppointmentsPage() {
                         {appointment.customerPhone}
                       </p>
                       <span
+                        data-testid={`status-badge-${appointment.id}`}
                         className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ring-1 ring-inset ${status.className}`}
                       >
                         <span
@@ -159,6 +164,7 @@ export default function AppointmentsPage() {
                           {canConfirm && (
                             <Button
                               size="sm"
+                              data-testid={`confirm-appointment-${appointment.id}`}
                               onClick={() =>
                                 updateAppointmentStatus(
                                   appointment.id,

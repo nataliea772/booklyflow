@@ -131,7 +131,10 @@ export default function BookPage() {
             >
               ✅
             </span>
-            <h1 className="mt-8 text-3xl font-bold text-[#111827]">
+            <h1
+              className="mt-8 text-3xl font-bold text-[#111827]"
+              data-testid="booking-success-message"
+            >
               Booking Request Received!
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-muted">
@@ -237,6 +240,7 @@ export default function BookPage() {
                 <select
                   id="service"
                   name="service"
+                  data-testid="service-select"
                   value={serviceId}
                   onChange={(e) => setServiceId(e.target.value)}
                   className="input-field"
@@ -264,6 +268,7 @@ export default function BookPage() {
                   type="date"
                   id="date"
                   name="date"
+                  data-testid="date-input"
                   value={appointmentDate}
                   onChange={(e) => setAppointmentDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
@@ -302,6 +307,7 @@ export default function BookPage() {
                         <button
                           key={slot.startTime}
                           type="button"
+                          data-testid={`time-slot-${slot.startTime}`}
                           onClick={() => setSelectedStartTime(slot.startTime)}
                           className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                             isSelected
@@ -329,6 +335,7 @@ export default function BookPage() {
                     type="text"
                     id="name"
                     name="name"
+                    data-testid="customer-name-input"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Jane Smith"
@@ -346,6 +353,7 @@ export default function BookPage() {
                     type="tel"
                     id="phone"
                     name="phone"
+                    data-testid="phone-input"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     placeholder="(555) 123-4567"
@@ -365,6 +373,7 @@ export default function BookPage() {
                 <textarea
                   id="notes"
                   name="notes"
+                  data-testid="notes-input"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
@@ -379,6 +388,7 @@ export default function BookPage() {
                   size="xl"
                   className="w-full sm:w-auto"
                   disabled={!isFormComplete}
+                  data-testid="submit-booking-button"
                 >
                   Request Appointment →
                 </Button>
