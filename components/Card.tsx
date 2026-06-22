@@ -25,8 +25,8 @@ const paddingStyles = {
 };
 
 const accentStyles = {
-  primary: "before:bg-gradient-to-l before:from-[#6d28d9] before:to-[#8b5cf6]",
-  secondary: "before:bg-gradient-to-l before:from-secondary before:to-[#ec4899]",
+  primary: "before:bg-gradient-to-l before:from-charcoal before:to-rose",
+  secondary: "before:bg-gradient-to-l before:from-rose before:to-[#ec4899]",
   none: "",
 };
 
@@ -63,7 +63,7 @@ export function CardHeader({ title, description, action, eyebrow }: CardHeaderPr
     <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         {eyebrow && <p className="section-eyebrow mb-2">{eyebrow}</p>}
-        <h2 className="text-xl font-extrabold tracking-tight text-[#111827] sm:text-2xl">
+        <h2 className="text-xl font-extrabold tracking-tight text-charcoal sm:text-2xl">
           {title}
         </h2>
         {description && (

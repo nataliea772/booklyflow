@@ -9,10 +9,10 @@ type StatCardProps = {
 
 const variantConfig = {
   primary: {
-    iconBg: "bg-gradient-to-bl from-[#FDF4FF] to-white",
-    iconRing: "ring-[#E9D5FF]",
-    accent: "from-[#581C87]/75 to-[#BE185D]/35",
-    glow: "from-[#F9A8D4]/12 via-transparent to-transparent",
+    iconBg: "bg-gradient-to-bl from-[#fff1f7] to-white",
+    iconRing: "ring-[#f9a8d4]/40",
+    accent: "from-charcoal/80 to-rose/40",
+    glow: "from-[#f9a8d4]/12 via-transparent to-transparent",
   },
   amber: {
     iconBg: "bg-gradient-to-bl from-amber-50 to-white",
@@ -61,11 +61,11 @@ export default function StatCard({
           <p className="text-xs font-bold uppercase tracking-wider text-muted sm:text-sm">
             {label}
           </p>
-          <p className="mt-3 text-4xl font-extrabold tracking-tight text-[#1F2937]">
+          <p className="mt-3 text-4xl font-extrabold tracking-tight text-charcoal">
             {value}
           </p>
           {trend && (
-            <p className="mt-2 text-sm font-semibold text-primary/90">{trend}</p>
+            <p className="mt-2 text-sm font-semibold text-rose/90">{trend}</p>
           )}
         </div>
         <span

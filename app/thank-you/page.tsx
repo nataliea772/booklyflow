@@ -43,47 +43,47 @@ function ThankYouContent() {
       <div className="mx-auto max-w-lg">
         <div className="boutique-card p-8 text-center sm:p-10">
           <span
-            className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-bl from-[#FDF4FF] to-[#FCE7F3] text-4xl ring-2 ring-[#F9A8D4]/35"
+            className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-bl from-[#fff1f7] to-[#fce7f3] text-4xl ring-2 ring-[#f9a8d4]/35"
             role="img"
             aria-hidden="true"
           >
             💫
           </span>
           <h1
-            className="mt-6 text-2xl font-extrabold text-[#581C87] sm:text-3xl"
+            className="mt-6 text-2xl font-extrabold text-charcoal sm:text-3xl"
             data-testid="booking-success-message"
           >
             תודה, הבקשה לתור התקבלה
           </h1>
-          <p className="mt-3 text-base leading-relaxed text-[#6B7280]">
+          <p className="mt-3 text-base leading-relaxed text-muted">
             נעדכן אותך לאחר אישור התור
           </p>
 
           {showSummary && appointment && (
-            <div className="mt-8 rounded-2xl border border-[#E9D5FF] bg-[#FDF4FF]/60 p-6 text-right">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#BE185D]">
+            <div className="mt-8 rounded-2xl border border-[#f9a8d4]/30 bg-[#fff1f7]/70 p-6 text-right">
+              <p className="section-eyebrow">
                 סיכום התור
               </p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[#6B7280]">שירות</dt>
-                  <dd className="font-semibold text-[#1F2937]">{serviceName}</dd>
+                  <dt className="text-muted">שירות</dt>
+                  <dd className="font-semibold text-charcoal">{serviceName}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[#6B7280]">תאריך</dt>
-                  <dd className="font-semibold text-[#1F2937]">
+                  <dt className="text-muted">תאריך</dt>
+                  <dd className="font-semibold text-charcoal">
                     {formatDisplayDate(appointment.appointmentDate)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[#6B7280]">שעה</dt>
-                  <dd className="font-semibold text-[#111827] ltr-value">
+                  <dt className="text-muted">שעה</dt>
+                  <dd className="font-semibold text-charcoal ltr-value">
                     {formatTimeLabel(appointment.startTime)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[#6B7280]">שם</dt>
-                  <dd className="font-semibold text-[#1F2937]">
+                  <dt className="text-muted">שם</dt>
+                  <dd className="font-semibold text-charcoal">
                     {appointment.customerName}
                   </dd>
                 </div>

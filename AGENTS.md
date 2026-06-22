@@ -28,10 +28,9 @@ Coding rules:
 - Explain important changes briefly.
 
 Design direction:
-- Modern calm business UI.
-- Primary color: #7C3AED.
-- Secondary color: #F472B6.
-- Background: #F8F7FF.
-- Text: #111827.
-- Use rounded cards, soft shadows, spacious layout.
+- Modern luxury beauty/boutique UI.
+- Primary palette: charcoal (#171018), deep plum (#2a1026), rose (#db2777), soft pink (#f9a8d4).
+- Background: blush (#fff1f7) and champagne (#fffafc).
+- Text: high contrast charcoal on light surfaces.
+- Use rounded cards, soft pink shadows, spacious layout.
 - Make the app look polished and professional.

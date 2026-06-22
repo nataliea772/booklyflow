@@ -20,10 +20,10 @@ export default function BookingSteps({ currentStep }: BookingStepsProps) {
             key={step.number}
             className={`rounded-2xl border px-3 py-3 transition-all duration-300 sm:px-4 sm:py-3.5 ${
               isActive
-                ? "border-[#F9A8D4]/50 bg-gradient-to-bl from-[#FDF4FF] to-[#FFFDF8] shadow-sm ring-1 ring-[#E9D5FF]"
+                ? "border-[#f9a8d4]/50 bg-gradient-to-bl from-[#fff1f7] to-[#fffafc] shadow-sm ring-1 ring-[#f9a8d4]/35"
                 : isComplete
-                  ? "border-[#F9A8D4]/35 bg-[#FFF1F5]/80"
-                  : "border-[rgba(190,24,93,0.08)] bg-white/70"
+                  ? "border-rose/20 bg-[#fff1f7]/80"
+                  : "border-rose/10 bg-white/80"
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -32,15 +32,15 @@ export default function BookingSteps({ currentStep }: BookingStepsProps) {
                   isActive
                     ? "btn-gradient text-white shadow-md"
                     : isComplete
-                      ? "bg-[#BE185D] text-white shadow-sm"
-                      : "bg-[#FDF4FF] text-[#581C87]"
+                      ? "bg-rose text-white shadow-sm"
+                      : "bg-[#fff1f7] text-charcoal"
                 }`}
               >
                 {isComplete ? "✓" : step.number}
               </span>
               <span
                 className={`text-xs font-bold sm:text-sm ${
-                  isActive ? "text-[#581C87]" : "text-[#6B7280]"
+                  isActive ? "text-charcoal" : "text-muted"
                 }`}
               >
                 {step.label}

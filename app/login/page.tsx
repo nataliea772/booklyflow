@@ -52,7 +52,7 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
       <div className="absolute inset-0 mesh-grid opacity-50" />
-      <div className="gradient-blob start-0 top-0 h-[28rem] w-[28rem] bg-[#8b5cf6]/20" />
+      <div className="gradient-blob start-0 top-0 h-[28rem] w-[28rem] bg-rose/15" />
       <div className="gradient-blob bottom-0 end-0 h-80 w-80 bg-secondary/15" />
 
       <div className="page-container relative flex min-h-[calc(100vh-5rem)] items-center justify-center py-12 sm:py-20">
@@ -70,7 +70,7 @@ export default function LoginPage() {
           </div>
 
           <div className="surface-premium relative hero-glow-ring overflow-hidden p-8 sm:p-10">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#6d28d9] to-[#8b5cf6]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-charcoal to-rose" />
             <form onSubmit={handleSubmit} className="relative space-y-6">
               <div>
                 <label

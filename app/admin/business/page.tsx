@@ -33,7 +33,7 @@ export default function BusinessSettingsPage() {
   const [wazeUrl, setWazeUrl] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#6d28d9");
+  const [primaryColor, setPrimaryColor] = useState("#171018");
   const [workingHours, setWorkingHours] = useState<BusinessWorkingDay[]>(
     createDefaultWorkingHours()
   );
@@ -77,7 +77,7 @@ export default function BusinessSettingsPage() {
     setWazeUrl(settings.wazeUrl ?? "");
     setEmail(settings.email ?? "");
     setAddress(settings.address ?? "");
-    setPrimaryColor(settings.primaryColor ?? "#6d28d9");
+    setPrimaryColor(settings.primaryColor ?? "#171018");
     setWorkingHours(settings.workingHours);
     setBufferMinutes(settings.bufferMinutes);
     setBookingWindowDays(settings.bookingWindowDays ?? 30);
@@ -305,7 +305,7 @@ export default function BusinessSettingsPage() {
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     className="input-field ltr-value flex-1"
-                    placeholder="#6d28d9"
+                    placeholder="#171018"
                   />
                 </div>
               </div>

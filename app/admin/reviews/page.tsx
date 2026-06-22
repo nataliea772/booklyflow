@@ -141,7 +141,7 @@ export default function ReviewsPage() {
                             <Badge variant="neutral">מוסתר</Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-[#BE185D]">
+                        <p className="mt-1 text-sm text-rose">
                           {formatStarRating(review.rating)}
                         </p>
                         {review.comment && (

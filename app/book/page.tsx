@@ -181,11 +181,11 @@ export default function BookPage() {
       <div className="page-container pb-28 pt-2 sm:pb-12 sm:pt-4">
         <div className="mx-auto max-w-2xl">
           <div className="boutique-card p-5 sm:p-8">
-            <div className="mb-6 border-b border-[#F9A8D4]/20 pb-6">
-              <h2 className="text-xl font-extrabold text-[#581C87] sm:text-2xl">
+            <div className="mb-6 border-b border-[#f9a8d4]/20 pb-6">
+              <h2 className="text-xl font-extrabold text-charcoal sm:text-2xl">
                 השלימו את ההזמנה
               </h2>
-              <p className="mt-1 text-sm text-[#6B7280]">
+              <p className="mt-1 text-sm text-muted">
                 שלושה צעדים קצרים — וסיימתם.
               </p>
             </div>
@@ -194,7 +194,7 @@ export default function BookPage() {
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <section className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                <h3 className="section-eyebrow">
                   1 · בחירת שירות
                 </h3>
                 <ServiceSelectCards
@@ -222,7 +222,7 @@ export default function BookPage() {
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                <h3 className="section-eyebrow">
                   2 · תאריך ושעה
                 </h3>
                 <input
@@ -259,7 +259,7 @@ export default function BookPage() {
                     התאריך שנבחר אינו זמין להזמנות
                   </p>
                 ) : availableSlots.length === 0 ? (
-                  <p className="rounded-2xl border border-[#E9D5FF] bg-[#FDF4FF]/50 px-4 py-6 text-center text-sm font-medium text-[#581C87]">
+                  <p className="rounded-2xl border border-[#f9a8d4]/30 bg-[#fff1f7]/60 px-4 py-6 text-center text-sm font-medium text-charcoal">
                     אין שעות פנויות בתאריך שנבחר
                   </p>
                 ) : (
@@ -285,7 +285,7 @@ export default function BookPage() {
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#BE185D]">
+                <h3 className="section-eyebrow">
                   3 · פרטי לקוח
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -347,7 +347,7 @@ export default function BookPage() {
                 </div>
               </section>
 
-              <div className="sticky bottom-0 -mx-6 border-t bg-[#FFFDF8]/95 px-6 py-4 backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4" style={{ borderColor: "rgba(124, 58, 237, 0.1)" }}>
+              <div className="sticky bottom-0 -mx-6 border-t border-rose/10 bg-[#fffafc]/95 px-6 py-4 backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4">
                 <Button
                   type="submit"
                   size="xl"

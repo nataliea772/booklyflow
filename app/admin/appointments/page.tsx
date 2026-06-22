@@ -287,7 +287,7 @@ export default function AppointmentsPage() {
       >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-bl from-primary to-[#8b5cf6] text-sm font-bold text-white shadow-md shadow-primary/25">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-bl from-charcoal to-rose text-sm font-bold text-white shadow-md shadow-rose/25">
               {appointment.customerName.charAt(0)}
             </span>
             <div>

@@ -23,13 +23,13 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "btn-gradient text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/45 active:scale-[0.98] focus-visible:ring-primary relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
+    "btn-gradient text-white shadow-lg shadow-rose/30 hover:shadow-xl hover:shadow-rose/40 active:scale-[0.98] focus-visible:ring-rose relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
   secondary:
-    "bg-gradient-to-l from-secondary to-[#ec4899] text-white shadow-lg shadow-secondary/30 hover:shadow-xl hover:shadow-secondary/40 active:scale-[0.98] focus-visible:ring-secondary",
+    "bg-gradient-to-l from-rose to-[#ec4899] text-white shadow-lg shadow-rose/30 hover:shadow-xl hover:shadow-rose/40 active:scale-[0.98] focus-visible:ring-rose",
   outline:
-    "border-2 border-[#F9A8D4]/35 bg-[#FFFDF8]/95 text-[#581C87] shadow-sm backdrop-blur-sm hover:border-[#BE185D]/30 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-[#BE185D]",
+    "border-2 border-[#f9a8d4]/40 bg-[#fffafc]/95 text-charcoal shadow-sm backdrop-blur-sm hover:border-rose/35 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-rose",
   ghost:
-    "bg-transparent text-[#1F2937] hover:bg-[#FFF1F5] hover:text-[#BE185D] active:scale-[0.98] focus-visible:ring-[#BE185D]",
+    "bg-transparent text-charcoal hover:bg-[#fff1f7] hover:text-rose active:scale-[0.98] focus-visible:ring-rose",
   danger:
     "border-2 border-red-200 bg-white text-red-700 shadow-sm hover:border-red-300 hover:bg-red-50 active:scale-[0.98] focus-visible:ring-red-400",
 };

@@ -144,12 +144,12 @@ export default function CustomerReviewPage() {
           {pageState === "not_found" && (
             <>
               <h1
-                className="text-2xl font-extrabold text-[#581C87]"
+                className="text-2xl font-extrabold text-charcoal"
                 data-testid="review-error-message"
               >
                 לא מצאנו את התור
               </h1>
-              <p className="mt-3 text-sm text-[#6B7280]">
+              <p className="mt-3 text-sm text-muted">
                 ייתכן שהקישור אינו תקין או שהתור הוסר מהמערכת.
               </p>
             </>
@@ -158,12 +158,12 @@ export default function CustomerReviewPage() {
           {pageState === "not_completed" && (
             <>
               <h1
-                className="text-2xl font-extrabold text-[#581C87]"
+                className="text-2xl font-extrabold text-charcoal"
                 data-testid="review-error-message"
               >
                 ניתן להשאיר ביקורת לאחר השלמת התור
               </h1>
-              <p className="mt-3 text-sm text-[#6B7280]">
+              <p className="mt-3 text-sm text-muted">
                 {appointment?.customerName
                   ? `שלום ${appointment.customerName},`
                   : null}{" "}
@@ -175,12 +175,12 @@ export default function CustomerReviewPage() {
           {pageState === "already_reviewed" && (
             <>
               <h1
-                className="text-2xl font-extrabold text-[#581C87]"
+                className="text-2xl font-extrabold text-charcoal"
                 data-testid="review-error-message"
               >
                 כבר התקבלה ביקורת עבור התור הזה
               </h1>
-              <p className="mt-3 text-sm text-[#6B7280]">
+              <p className="mt-3 text-sm text-muted">
                 תודה! הביקורת שלך כבר נקלטה במערכת.
               </p>
             </>
@@ -189,18 +189,18 @@ export default function CustomerReviewPage() {
           {pageState === "thank_you" && (
             <>
               <span
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-bl from-[#FDF4FF] to-[#FCE7F3] text-3xl"
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-bl from-[#fff1f7] to-[#fce7f3] text-3xl ring-2 ring-[#f9a8d4]/35"
                 aria-hidden="true"
               >
                 ✨
               </span>
               <h1
-                className="mt-6 text-2xl font-extrabold text-[#581C87]"
+                className="mt-6 text-2xl font-extrabold text-charcoal"
                 data-testid="review-success-message"
               >
                 תודה על הביקורת שלך
               </h1>
-              <p className="mt-3 text-sm text-[#6B7280]">
+              <p className="mt-3 text-sm text-muted">
                 המילים שלך עוזרות לנו להמשיך לשפר את החוויה.
               </p>
             </>
@@ -208,10 +208,10 @@ export default function CustomerReviewPage() {
 
           {pageState === "form" && (
             <>
-              <h1 className="text-2xl font-extrabold text-[#581C87] sm:text-3xl">
+              <h1 className="text-2xl font-extrabold text-charcoal sm:text-3xl">
                 איך הייתה החוויה שלך?
               </h1>
-              <p className="mt-3 text-sm text-[#6B7280]">
+              <p className="mt-3 text-sm text-muted">
                 נשמח לשמוע על הביקורת שלך לאחר התור.
               </p>
 
@@ -258,7 +258,7 @@ export default function CustomerReviewPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-2 text-sm text-[#BE185D]">{ratingPreview}</p>
+                  <p className="mt-2 text-sm text-rose">{ratingPreview}</p>
                 </div>
 
                 <div>
@@ -267,7 +267,7 @@ export default function CustomerReviewPage() {
                     className="mb-2 block text-sm font-bold text-[#111827]"
                   >
                     תגובה{" "}
-                    <span className="font-normal text-[#6B7280]">(אופציונלי)</span>
+                    <span className="font-normal text-muted">(אופציונלי)</span>
                   </label>
                   <textarea
                     id="reviewComment"

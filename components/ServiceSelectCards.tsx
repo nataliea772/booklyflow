@@ -29,7 +29,7 @@ export default function ServiceSelectCards({
             className={`group overflow-hidden rounded-[1.5rem] border text-right transition-all duration-300 ${
               isSelected
                 ? "service-card-selected scale-[1.01]"
-                : "border-[rgba(190,24,93,0.1)] bg-[#FFFDF8] hover:-translate-y-1 hover:border-[#F9A8D4]/50 hover:shadow-[var(--card-shadow)]"
+                : "border-rose/10 bg-[#fffafc] hover:-translate-y-1 hover:border-[#f9a8d4]/50 hover:shadow-[var(--card-shadow)]"
             }`}
           >
             <div className="service-catalog-image">
@@ -41,7 +41,7 @@ export default function ServiceSelectCards({
                 className="!h-full !min-h-[7.5rem] rounded-none ring-0 sm:!min-h-[8.5rem]"
               />
               {isSelected && (
-                <span className="absolute start-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#BE185D] shadow-sm ring-1 ring-[#F9A8D4]/40">
+                <span className="absolute start-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-rose shadow-sm ring-1 ring-[#f9a8d4]/45">
                   נבחר
                 </span>
               )}
@@ -50,22 +50,22 @@ export default function ServiceSelectCards({
               <p
                 className={`text-lg font-bold transition-colors ${
                   isSelected
-                    ? "text-[#581C87]"
-                    : "text-[#1F2937] group-hover:text-[#BE185D]"
+                    ? "text-charcoal"
+                    : "text-charcoal group-hover:text-rose"
                 }`}
               >
                 {service.name}
               </p>
               {service.description && (
-                <p className="line-clamp-2 text-sm leading-relaxed text-[#6B7280]">
+                <p className="line-clamp-2 text-sm leading-relaxed text-muted">
                   {service.description}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="inline-flex rounded-full bg-[#FDF4FF] px-3 py-1 text-xs font-bold text-[#581C87] ring-1 ring-[#E9D5FF]">
+                <span className="inline-flex rounded-full bg-[#fff1f7] px-3 py-1 text-xs font-bold text-charcoal ring-1 ring-[#f9a8d4]/35">
                   {service.durationMinutes} דק׳
                 </span>
-                <span className="text-sm font-bold text-[#BE185D]">
+                <span className="text-sm font-bold text-rose">
                   {formatPrice(service.price)}
                 </span>
               </div>

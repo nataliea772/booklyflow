@@ -48,11 +48,11 @@ export default function CustomerReviews() {
       data-testid="customer-reviews-section"
     >
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#BE185D]">
+        <div className="mb-6 rounded-[1.5rem] bg-gradient-to-l from-[#111014] via-[#2a1026] to-[#4a1538] px-6 py-5 text-center shadow-[var(--card-shadow-lg)]">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#f9a8d4]">
             חוויות לקוחות
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold text-[#581C87] sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-extrabold text-[#fffafc] sm:text-3xl">
             לקוחות מספרות
           </h2>
         </div>
@@ -61,20 +61,20 @@ export default function CustomerReviews() {
           {reviews.map((review) => (
             <article
               key={review.id}
-              className="boutique-card p-5 text-right"
+              className="review-card-luxury text-right"
               data-testid={`customer-review-${review.id}`}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="font-bold text-[#111827]">{review.customerName}</p>
+                <p className="font-bold text-charcoal">{review.customerName}</p>
                 <span
-                  className="shrink-0 text-sm tracking-tight text-[#BE185D]"
+                  className="shrink-0 text-sm tracking-tight text-rose"
                   aria-label={`דירוג ${review.rating} מתוך 5`}
                 >
                   {formatStarRating(review.rating)}
                 </span>
               </div>
               {review.comment && (
-                <p className="mt-3 text-sm leading-relaxed text-[#6B7280]">
+                <p className="mt-3 text-sm leading-relaxed text-muted">
                   {review.comment}
                 </p>
               )}
