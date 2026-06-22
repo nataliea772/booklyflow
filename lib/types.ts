@@ -49,6 +49,16 @@ export type BlockedTime = {
   createdAt: string;
 };
 
+export type CustomerReview = {
+  id: string;
+  appointmentId?: string;
+  customerName: string;
+  rating: number;
+  comment?: string;
+  isVisible: boolean;
+  createdAt: string;
+};
+
 export type BusinessSettings = {
   id?: string;
   businessName: string;
@@ -60,6 +70,9 @@ export type BusinessSettings = {
   workingDays: number[];
   description?: string;
   phone?: string;
+  whatsappPhone?: string;
+  locationUrl?: string;
+  wazeUrl?: string;
   email?: string;
   address?: string;
   logoUrl?: string;

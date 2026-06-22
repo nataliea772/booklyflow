@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  buildAppointmentConfirmedMessage,
-  buildAppointmentSmsMessage,
-  isSmsConfigured,
-  normalizePhoneNumber,
-  sendSms,
-} from "@/lib/server/sms";
+  buildAppointmentWhatsAppMessage,
+  isWhatsAppConfigured,
+  normalizeWhatsAppNumber,
+  sendWhatsAppMessage,
+} from "@/lib/server/whatsapp";
 import type { Appointment, BusinessSettings, Service } from "@/lib/types";
 
 const appointment: Pick<Appointment, "appointmentDate" | "startTime"> = {
@@ -21,9 +20,9 @@ const businessSettings: Pick<BusinessSettings, "businessName"> = {
   businessName: "סטודיו יופי",
 };
 
-describe("buildAppointmentSmsMessage", () => {
-  it("builds a Hebrew confirmation message with business, date, and time", () => {
-    const message = buildAppointmentSmsMessage(
+describe("buildAppointmentWhatsAppMessage", () => {
+  it("builds a Hebrew confirmation message with greeting", () => {
+    const message = buildAppointmentWhatsAppMessage(
       "confirmed",
       appointment,
       service,
@@ -32,11 +31,11 @@ describe("buildAppointmentSmsMessage", () => {
 
     expect(message).toContain("סטודיו יופי");
     expect(message).toMatch(/אושר לתאריך .+ בשעה 10:00\./);
-    expect(message).not.toContain("נשמח לראותך");
+    expect(message).toContain("נשמח לראותך!");
   });
 
   it("builds a Hebrew cancellation message", () => {
-    const message = buildAppointmentSmsMessage(
+    const message = buildAppointmentWhatsAppMessage(
       "cancelled",
       appointment,
       service,
@@ -50,7 +49,7 @@ describe("buildAppointmentSmsMessage", () => {
   });
 
   it("builds a Hebrew rescheduled message", () => {
-    const message = buildAppointmentSmsMessage(
+    const message = buildAppointmentWhatsAppMessage(
       "rescheduled",
       appointment,
       service,
@@ -60,38 +59,46 @@ describe("buildAppointmentSmsMessage", () => {
     expect(message).toContain("סטודיו יופי");
     expect(message).toMatch(/עודכן לתאריך .+ בשעה 10:00\./);
   });
-});
 
-describe("buildAppointmentConfirmedMessage", () => {
-  it("delegates to the confirmed SMS message builder", () => {
-    const message = buildAppointmentConfirmedMessage(
+  it("builds a Hebrew review request message with service and link", () => {
+    const reviewLink = "https://booklyflow.example/review/appt-1";
+    const message = buildAppointmentWhatsAppMessage(
+      "review_request",
       appointment,
       service,
-      businessSettings
+      businessSettings,
+      reviewLink
     );
 
-    expect(message).toBe(
-      buildAppointmentSmsMessage(
-        "confirmed",
+    expect(message).toContain("סטודיו יופי");
+    expect(message).toContain("טיפול צבע");
+    expect(message).toContain("לדירוג:");
+    expect(message).toContain(reviewLink);
+  });
+
+  it("requires a review link for review_request messages", () => {
+    expect(() =>
+      buildAppointmentWhatsAppMessage(
+        "review_request",
         appointment,
         service,
         businessSettings
       )
-    );
+    ).toThrow("reviewLink is required");
   });
 });
 
-describe("normalizePhoneNumber", () => {
+describe("normalizeWhatsAppNumber", () => {
   it("converts Israeli local numbers to E.164", () => {
-    expect(normalizePhoneNumber("050-123-4567")).toBe("+972501234567");
+    expect(normalizeWhatsAppNumber("050-123-4567")).toBe("+972501234567");
   });
 
   it("keeps numbers that already include country code", () => {
-    expect(normalizePhoneNumber("+972501234567")).toBe("+972501234567");
+    expect(normalizeWhatsAppNumber("+972501234567")).toBe("+972501234567");
   });
 });
 
-describe("sendSms", () => {
+describe("sendWhatsAppMessage", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -103,34 +110,34 @@ describe("sendSms", () => {
     process.env = originalEnv;
   });
 
-  it("returns a configuration error when SMS provider is missing", async () => {
-    delete process.env.SMS_PROVIDER;
+  it("returns a configuration error when WhatsApp provider is missing", async () => {
+    delete process.env.WHATSAPP_PROVIDER;
 
-    const result = await sendSms("0501234567", "בדיקה");
+    const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("not configured");
-    expect(isSmsConfigured()).toBe(false);
+    expect(isWhatsAppConfigured()).toBe(false);
   });
 
   it("returns a configuration error when Twilio credentials are incomplete", async () => {
-    process.env.SMS_PROVIDER = "twilio";
-    process.env.SMS_ACCOUNT_SID = "AC123";
-    delete process.env.SMS_AUTH_TOKEN;
-    delete process.env.SMS_FROM_NUMBER;
+    process.env.WHATSAPP_PROVIDER = "twilio";
+    process.env.WHATSAPP_ACCOUNT_SID = "AC123";
+    delete process.env.WHATSAPP_AUTH_TOKEN;
+    delete process.env.WHATSAPP_FROM_NUMBER;
 
-    const result = await sendSms("0501234567", "בדיקה");
+    const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain("Twilio credentials");
-    expect(isSmsConfigured()).toBe(false);
+    expect(result.error).toContain("Twilio WhatsApp credentials");
+    expect(isWhatsAppConfigured()).toBe(false);
   });
 
-  it("sends SMS via Twilio when credentials are configured", async () => {
-    process.env.SMS_PROVIDER = "twilio";
-    process.env.SMS_ACCOUNT_SID = "AC123";
-    process.env.SMS_AUTH_TOKEN = "secret-token";
-    process.env.SMS_FROM_NUMBER = "+15551234567";
+  it("sends WhatsApp via Twilio when credentials are configured", async () => {
+    process.env.WHATSAPP_PROVIDER = "twilio";
+    process.env.WHATSAPP_ACCOUNT_SID = "AC123";
+    process.env.WHATSAPP_AUTH_TOKEN = "secret-token";
+    process.env.WHATSAPP_FROM_NUMBER = "+14155238886";
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -138,9 +145,9 @@ describe("sendSms", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(isSmsConfigured()).toBe(true);
+    expect(isWhatsAppConfigured()).toBe(true);
 
-    const result = await sendSms("0501234567", "הודעת בדיקה");
+    const result = await sendWhatsAppMessage("0501234567", "הודעת בדיקה");
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -148,16 +155,16 @@ describe("sendSms", () => {
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain("/Accounts/AC123/Messages.json");
     expect(options.method).toBe("POST");
-    expect(String(options.body)).toContain("To=%2B972501234567");
+    expect(String(options.body)).toContain("To=whatsapp%3A%2B972501234567");
+    expect(String(options.body)).toContain("From=whatsapp%3A");
     expect(String(options.body)).toContain("Body=");
-    expect(String(options.body)).toContain("%D7%94%D7%95%D7%93%D7%A2%D7%AA");
   });
 
   it("returns Twilio API errors without throwing", async () => {
-    process.env.SMS_PROVIDER = "twilio";
-    process.env.SMS_ACCOUNT_SID = "AC123";
-    process.env.SMS_AUTH_TOKEN = "secret-token";
-    process.env.SMS_FROM_NUMBER = "+15551234567";
+    process.env.WHATSAPP_PROVIDER = "twilio";
+    process.env.WHATSAPP_ACCOUNT_SID = "AC123";
+    process.env.WHATSAPP_AUTH_TOKEN = "secret-token";
+    process.env.WHATSAPP_FROM_NUMBER = "+14155238886";
 
     vi.stubGlobal(
       "fetch",
@@ -168,7 +175,7 @@ describe("sendSms", () => {
       })
     );
 
-    const result = await sendSms("0501234567", "בדיקה");
+    const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("Twilio error (400)");

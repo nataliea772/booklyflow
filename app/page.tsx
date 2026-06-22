@@ -1,5 +1,6 @@
 "use client";
 
+import CustomerReviews from "@/components/CustomerReviews";
 import BoutiqueHero from "@/components/BoutiqueHero";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { getPublicBusinessName } from "@/lib/business-config";
@@ -27,6 +28,7 @@ export default function HomePage() {
         </div>
       )}
       <BoutiqueHero settings={displaySettings} />
+      <CustomerReviews />
     </>
   );
 }

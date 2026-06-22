@@ -94,20 +94,11 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <section className="page-header-bg">
-        <div className="page-container relative py-14 sm:py-16 lg:py-20">
-          <AdminNav />
-          <Badge variant="primary" className="mb-5">
-            לוח בקרה
-          </Badge>
-          <h1 className="display-section">סקירה עסקית</h1>
-          <p className="lead mt-4 max-w-2xl">
-            מעקב אחר תורים, הכנסות ופעילות יומית — במקום אחד.
-          </p>
-        </div>
-      </section>
+      <div className="page-container pt-4 sm:pt-6">
+        <AdminNav />
+      </div>
 
-      <div className="page-container py-12 sm:py-16 lg:py-20">
+      <div className="page-container pb-12 sm:pb-16">
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="תורים להיום"

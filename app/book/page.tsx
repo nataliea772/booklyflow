@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BookingSteps from "@/components/BookingSteps";
 import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
+import CustomerReviews from "@/components/CustomerReviews";
 import Button from "@/components/Button";
 import EmptyState from "@/components/EmptyState";
 import ServiceSelectCards from "@/components/ServiceSelectCards";
@@ -361,6 +362,7 @@ export default function BookPage() {
           </div>
         </div>
       </div>
+      <CustomerReviews />
     </>
   );
 }

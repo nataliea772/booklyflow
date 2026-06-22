@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { SmsEventType } from "@/lib/server/sms";
+import type { WhatsAppEventType } from "@/lib/server/whatsapp";
 
 export type AppointmentNotificationRecord = {
   appointmentId: string;
-  eventType: SmsEventType;
+  eventType: WhatsAppEventType;
   channel?: string;
   status: "sent" | "failed";
   error?: string | null;
@@ -16,7 +16,7 @@ export async function recordAppointmentNotification(
   const { error } = await supabase.from("appointment_notifications").insert({
     appointment_id: input.appointmentId,
     event_type: input.eventType,
-    channel: input.channel ?? "sms",
+    channel: input.channel ?? "whatsapp",
     status: input.status,
     error: input.error?.trim() || null,
   });

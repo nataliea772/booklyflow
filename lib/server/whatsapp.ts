@@ -3,40 +3,44 @@ import { getPublicBusinessName } from "@/lib/business-config";
 import { formatDisplayDate } from "@/lib/i18n";
 import type { Appointment, BusinessSettings, Service } from "@/lib/types";
 
-export type SmsEventType = "confirmed" | "cancelled" | "rescheduled";
+export type WhatsAppEventType =
+  | "confirmed"
+  | "cancelled"
+  | "rescheduled"
+  | "review_request";
 
-export type SmsSendResult = {
+export type WhatsAppSendResult = {
   success: boolean;
   error?: string;
 };
 
-type TwilioConfig = {
+type TwilioWhatsAppConfig = {
   accountSid: string;
   authToken: string;
   fromNumber: string;
 };
 
-export function isSmsConfigured(): boolean {
-  return Boolean(getActiveSmsProvider());
+export function isWhatsAppConfigured(): boolean {
+  return Boolean(getActiveWhatsAppProvider());
 }
 
-function getActiveSmsProvider(): string | null {
-  const provider = process.env.SMS_PROVIDER?.trim().toLowerCase();
+function getActiveWhatsAppProvider(): string | null {
+  const provider = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase();
   if (!provider) {
     return null;
   }
 
-  if (provider === "twilio" && getTwilioConfig()) {
+  if (provider === "twilio" && getTwilioWhatsAppConfig()) {
     return "twilio";
   }
 
   return null;
 }
 
-function getTwilioConfig(): TwilioConfig | null {
-  const accountSid = process.env.SMS_ACCOUNT_SID?.trim();
-  const authToken = process.env.SMS_AUTH_TOKEN?.trim();
-  const fromNumber = process.env.SMS_FROM_NUMBER?.trim();
+function getTwilioWhatsAppConfig(): TwilioWhatsAppConfig | null {
+  const accountSid = process.env.WHATSAPP_ACCOUNT_SID?.trim();
+  const authToken = process.env.WHATSAPP_AUTH_TOKEN?.trim();
+  const fromNumber = process.env.WHATSAPP_FROM_NUMBER?.trim();
 
   if (!accountSid || !authToken || !fromNumber) {
     return null;
@@ -45,8 +49,8 @@ function getTwilioConfig(): TwilioConfig | null {
   return { accountSid, authToken, fromNumber };
 }
 
-/** Normalizes common Israeli/local formats to E.164 for Twilio. */
-export function normalizePhoneNumber(phone: string): string {
+/** Normalizes common Israeli/local formats to E.164 for Twilio WhatsApp. */
+export function normalizeWhatsAppNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
 
   if (digits.startsWith("972")) {
@@ -64,11 +68,19 @@ export function normalizePhoneNumber(phone: string): string {
   return `+${digits}`;
 }
 
-export function buildAppointmentSmsMessage(
-  eventType: SmsEventType,
+function formatWhatsAppAddress(number: string): string {
+  const normalized = normalizeWhatsAppNumber(number);
+  return normalized.startsWith("whatsapp:")
+    ? normalized
+    : `whatsapp:${normalized}`;
+}
+
+export function buildAppointmentWhatsAppMessage(
+  eventType: WhatsAppEventType,
   appointment: Pick<Appointment, "appointmentDate" | "startTime">,
-  _service: Pick<Service, "name">,
-  businessSettings: Pick<BusinessSettings, "businessName">
+  service: Pick<Service, "name">,
+  businessSettings: Pick<BusinessSettings, "businessName">,
+  reviewLink?: string
 ): string {
   const businessName = getPublicBusinessName(businessSettings);
   const date = formatDisplayDate(appointment.appointmentDate);
@@ -76,48 +88,40 @@ export function buildAppointmentSmsMessage(
 
   switch (eventType) {
     case "confirmed":
-      return `התור שלך ב-${businessName} אושר לתאריך ${date} בשעה ${time}.`;
+      return `התור שלך ב-${businessName} אושר לתאריך ${date} בשעה ${time}. נשמח לראותך!`;
     case "cancelled":
       return `התור שלך ב-${businessName} לתאריך ${date} בשעה ${time} בוטל. לפרטים נוספים ניתן ליצור קשר עם העסק.`;
     case "rescheduled":
       return `התור שלך ב-${businessName} עודכן לתאריך ${date} בשעה ${time}.`;
+    case "review_request": {
+      if (!reviewLink) {
+        throw new Error("reviewLink is required for review_request WhatsApp.");
+      }
+
+      return `תודה שביקרת ב-${businessName}! נשמח לשמוע איך הייתה החוויה שלך עבור התור: ${service.name}. לדירוג: ${reviewLink}`;
+    }
   }
 }
 
-/** @deprecated Use buildAppointmentSmsMessage("confirmed", ...) */
-export function buildAppointmentConfirmedMessage(
-  appointment: Pick<Appointment, "appointmentDate" | "startTime">,
-  service: Pick<Service, "name">,
-  businessSettings: Pick<BusinessSettings, "businessName">
-): string {
-  return buildAppointmentSmsMessage(
-    "confirmed",
-    appointment,
-    service,
-    businessSettings
-  );
-}
-
-async function sendViaTwilio(
+async function sendViaTwilioWhatsApp(
   to: string,
   message: string
-): Promise<SmsSendResult> {
-  const config = getTwilioConfig();
+): Promise<WhatsAppSendResult> {
+  const config = getTwilioWhatsAppConfig();
   if (!config) {
     return {
       success: false,
-      error: "Twilio credentials are not configured.",
+      error: "Twilio WhatsApp credentials are not configured.",
     };
   }
 
-  const normalizedTo = normalizePhoneNumber(to);
   const credentials = Buffer.from(
     `${config.accountSid}:${config.authToken}`
   ).toString("base64");
 
   const body = new URLSearchParams({
-    From: config.fromNumber,
-    To: normalizedTo,
+    From: formatWhatsAppAddress(config.fromNumber),
+    To: formatWhatsAppAddress(to),
     Body: message,
   });
 
@@ -147,30 +151,32 @@ async function sendViaTwilio(
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : "Failed to send SMS via Twilio.",
+        error instanceof Error
+          ? error.message
+          : "Failed to send WhatsApp via Twilio.",
     };
   }
 }
 
-export async function sendSms(
+export async function sendWhatsAppMessage(
   to: string,
   message: string
-): Promise<SmsSendResult> {
-  const provider = process.env.SMS_PROVIDER?.trim().toLowerCase();
+): Promise<WhatsAppSendResult> {
+  const provider = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase();
 
   if (provider === "twilio") {
-    return sendViaTwilio(to, message);
+    return sendViaTwilioWhatsApp(to, message);
   }
 
   if (!provider) {
     return {
       success: false,
-      error: "SMS provider is not configured.",
+      error: "WhatsApp provider is not configured.",
     };
   }
 
   return {
     success: false,
-    error: `Unsupported SMS provider: ${provider}`,
+    error: `Unsupported WhatsApp provider: ${provider}`,
   };
 }

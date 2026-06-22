@@ -1,8 +1,8 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import AdminNav from "@/components/AdminNav";
-import Badge from "@/components/Badge";
+import AdminToast from "@/components/AdminToast";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
@@ -28,6 +28,9 @@ export default function BusinessSettingsPage() {
   const [businessName, setBusinessName] = useState("");
   const [description, setDescription] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [locationUrl, setLocationUrl] = useState("");
+  const [wazeUrl, setWazeUrl] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#6d28d9");
@@ -39,13 +42,39 @@ export default function BusinessSettingsPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(type: "success" | "error", message: string) {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    setToast({ type, message });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 2000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setBusinessName(settings.businessName);
     setDescription(settings.description ?? "");
     setPhone(settings.phone ?? "");
+    setWhatsappPhone(settings.whatsappPhone ?? "");
+    setLocationUrl(settings.locationUrl ?? "");
+    setWazeUrl(settings.wazeUrl ?? "");
     setEmail(settings.email ?? "");
     setAddress(settings.address ?? "");
     setPrimaryColor(settings.primaryColor ?? "#6d28d9");
@@ -65,10 +94,33 @@ export default function BusinessSettingsPage() {
     );
   }
 
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const result = await saveSettings({
+        phone: phone || null,
+        whatsappPhone: whatsappPhone || null,
+        locationUrl: locationUrl || null,
+        wazeUrl: wazeUrl || null,
+      });
+
+      if (result.error) {
+        showToast("error", "לא הצלחנו לשמור את השינויים");
+        return;
+      }
+
+      showToast("success", "השינויים נשמרו בהצלחה");
+    } catch {
+      showToast("error", "לא הצלחנו לשמור את השינויים");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSuccessMessage(null);
-    setErrorMessage(null);
     setIsSaving(true);
 
     try {
@@ -104,17 +156,15 @@ export default function BusinessSettingsPage() {
       });
 
       if (result.error) {
-        setErrorMessage(result.error);
+        showToast("error", "לא הצלחנו לשמור את השינויים");
         return;
       }
 
       setLogoFile(null);
       setCoverFile(null);
-      setSuccessMessage("פרטי העסק נשמרו בהצלחה.");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "שגיאה בשמירת הפרטים."
-      );
+      showToast("success", "השינויים נשמרו בהצלחה");
+    } catch {
+      showToast("error", "לא הצלחנו לשמור את השינויים");
     } finally {
       setIsSaving(false);
     }
@@ -131,16 +181,10 @@ export default function BusinessSettingsPage() {
   if (!usesDatabase) {
     return (
       <>
-        <section className="page-header-bg">
-          <div className="page-container relative py-14 sm:py-16 lg:py-20">
-            <AdminNav />
-            <Badge variant="primary" className="mb-5">
-              מיתוג
-            </Badge>
-            <h1 className="display-section">פרטי העסק</h1>
-          </div>
-        </section>
-        <div className="page-container py-12 sm:py-16">
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <div className="page-container pb-12 sm:pb-16">
           <EmptyState
             icon="🏢"
             title="מיתוג עסקי זמין עם Supabase"
@@ -153,21 +197,16 @@ export default function BusinessSettingsPage() {
 
   return (
     <>
-      <section className="page-header-bg">
-        <div className="page-container relative py-14 sm:py-16 lg:py-20">
-          <AdminNav />
-          <Badge variant="primary" className="mb-5">
-            מיתוג
-          </Badge>
-          <h1 className="display-section">פרטי העסק</h1>
-          <p className="lead mt-4 max-w-2xl">
-            התאימו את דף ההזמנה עם לוגו, תמונת כיסוי ופרטי קשר — כך שהלקוחות
-            ירגישו שזה העסק שלכם.
-          </p>
-        </div>
-      </section>
+      <AdminToast
+        type={toast?.type ?? "success"}
+        message={toast?.message ?? ""}
+        visible={toast !== null}
+      />
+      <div className="page-container pt-4 sm:pt-6">
+        <AdminNav />
+      </div>
 
-      <div className="page-container py-12 sm:py-16 lg:py-20">
+      <div className="page-container pb-12 sm:pb-16">
         <div className="grid gap-10 lg:grid-cols-5">
           <div className="space-y-8 lg:col-span-3">
           <Card glass accent="primary" padding="lg">
@@ -212,39 +251,21 @@ export default function BusinessSettingsPage() {
                 />
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
-                    טלפון
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input-field ltr-value"
-                    placeholder="050-000-0000"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
-                    אימייל
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="input-field ltr-value"
-                    placeholder="hello@business.com"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-2.5 block text-sm font-bold text-[#111827]"
+                >
+                  אימייל
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field ltr-value"
+                  placeholder="hello@business.com"
+                />
               </div>
 
               <div>
@@ -288,17 +309,6 @@ export default function BusinessSettingsPage() {
                   />
                 </div>
               </div>
-
-              {successMessage && (
-                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                  {successMessage}
-                </p>
-              )}
-              {errorMessage && (
-                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                  {errorMessage}
-                </p>
-              )}
 
               <Button type="submit" size="lg" disabled={isSaving}>
                 {isSaving ? "שומר…" : "שמירת פרטי העסק"}
@@ -450,6 +460,95 @@ export default function BusinessSettingsPage() {
           </div>
 
           <div className="space-y-6 lg:col-span-2">
+            <Card glass accent="primary" padding="lg">
+              <CardHeader
+                title="כפתורי יצירת קשר"
+                description="הכפתורים יוצגו ללקוחות רק אם הוגדרו פרטים מתאימים."
+              />
+
+              <form
+                onSubmit={handleContactSubmit}
+                className="space-y-5"
+                data-testid="contact-links-form"
+              >
+                <div>
+                  <label
+                    htmlFor="contactPhone"
+                    className="mb-2.5 block text-sm font-bold text-[#111827]"
+                  >
+                    טלפון להתקשרות
+                  </label>
+                  <input
+                    id="contactPhone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="050-000-0000"
+                    data-testid="contact-phone-input"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="whatsappPhone"
+                    className="mb-2.5 block text-sm font-bold text-[#111827]"
+                  >
+                    מספר WhatsApp
+                  </label>
+                  <input
+                    id="whatsappPhone"
+                    type="tel"
+                    value={whatsappPhone}
+                    onChange={(e) => setWhatsappPhone(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="050-000-0000"
+                    data-testid="whatsapp-phone-input"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="locationUrl"
+                    className="mb-2.5 block text-sm font-bold text-[#111827]"
+                  >
+                    קישור מיקום / Google Maps
+                  </label>
+                  <input
+                    id="locationUrl"
+                    type="url"
+                    value={locationUrl}
+                    onChange={(e) => setLocationUrl(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="https://maps.google.com/..."
+                    data-testid="location-url-input"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="wazeUrl"
+                    className="mb-2.5 block text-sm font-bold text-[#111827]"
+                  >
+                    קישור Waze
+                  </label>
+                  <input
+                    id="wazeUrl"
+                    type="url"
+                    value={wazeUrl}
+                    onChange={(e) => setWazeUrl(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="https://waze.com/ul/..."
+                    data-testid="waze-url-input"
+                  />
+                </div>
+
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? "שומר…" : "שמירת כפתורי יצירת קשר"}
+                </Button>
+              </form>
+            </Card>
+
             <Card glass accent="secondary" padding="lg">
               <CardHeader
                 title="תמונות מיתוג"

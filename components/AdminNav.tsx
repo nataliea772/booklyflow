@@ -6,22 +6,28 @@ import Button from "@/components/Button";
 import { useAuth } from "@/hooks/useAuth";
 
 const adminLinks = [
-  { href: "/admin", label: "לוח בקרה", icon: "📊", exact: true },
-  { href: "/admin/business", label: "פרטי העסק", icon: "🏢", exact: false },
-  { href: "/admin/services", label: "ניהול שירותים", icon: "✨", exact: false },
+  { href: "/admin", label: "לוח בקרה", exact: true },
+  { href: "/admin/business", label: "פרטי העסק", exact: false },
+  { href: "/admin/services", label: "שירותים", exact: false },
+  { href: "/admin/appointments", label: "תורים", exact: false },
   {
     href: "/admin/blocked-times",
     label: "חסימות וחופשות",
-    icon: "🗓️",
     exact: false,
   },
-  {
-    href: "/admin/appointments",
-    label: "ניהול תורים",
-    icon: "📋",
-    exact: false,
-  },
+  { href: "/admin/reviews", label: "ביקורות", exact: false },
 ];
+
+function navLinkClassName(isLinkActive: boolean): string {
+  const base =
+    "flex min-h-[44px] w-full items-center justify-center rounded-2xl px-3 py-2.5 text-center text-sm font-bold transition-all duration-200";
+
+  if (isLinkActive) {
+    return `${base} btn-gradient text-white shadow-md shadow-primary/25`;
+  }
+
+  return `${base} border border-primary/10 bg-white/80 text-[#111827] hover:border-primary/20 hover:bg-primary-light/50 hover:text-primary`;
+}
 
 export default function AdminNav() {
   const pathname = usePathname();
@@ -29,7 +35,10 @@ export default function AdminNav() {
   const { logout, authRequired, user } = useAuth();
 
   const isActive = (href: string, exact: boolean) => {
-    if (exact) return pathname === href;
+    if (exact) {
+      return pathname === href;
+    }
+
     return pathname.startsWith(href);
   };
 
@@ -39,48 +48,50 @@ export default function AdminNav() {
   }
 
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
-      <Link href="/admin" className="flex items-center gap-2 text-sm font-bold text-[#111827]">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-bl from-[#6d28d9] to-[#8b5cf6] text-xs font-extrabold text-white shadow-md shadow-primary/25">
-          B
-        </span>
-        <span>
-          Bookly<span className="text-gradient">Flow</span>
-        </span>
-      </Link>
-      <nav className="inline-flex flex-wrap gap-1.5 rounded-2xl border border-white/80 bg-white/75 p-1.5 shadow-[var(--card-shadow)] backdrop-blur-xl">
-        {adminLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300 sm:px-5 sm:py-3 ${
-              isActive(link.href, link.exact)
-                ? "btn-gradient text-white shadow-lg shadow-primary/30"
-                : "text-[#111827] hover:bg-primary-light/60 hover:text-primary"
-            }`}
+    <header
+      className="sticky top-0 z-50 mb-6 w-full overflow-x-hidden sm:mb-8 lg:mb-10"
+      data-testid="admin-nav"
+    >
+      <div className="mx-auto w-full max-w-7xl rounded-2xl border border-white/80 bg-[#FFFDF8]/95 px-4 shadow-[var(--card-shadow)] backdrop-blur-xl sm:px-5">
+        <div className="flex items-center justify-end gap-3 border-b border-primary/10 py-2.5">
+          {authRequired && user?.email && (
+            <span
+              className="min-w-0 truncate text-xs font-medium text-muted sm:text-sm ltr-value"
+              data-testid="admin-user-email"
+            >
+              {user.email}
+            </span>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            data-testid="logout-button"
+            className="shrink-0"
           >
-            <span aria-hidden="true">{link.icon}</span>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+            התנתקות
+          </Button>
+        </div>
 
-      <div className="flex items-center gap-3">
-        {authRequired && user?.email && (
-          <span className="hidden text-sm font-medium text-muted sm:inline ltr-value">
-            {user.email}
-          </span>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleLogout}
-          data-testid="logout-button"
+        <nav
+          className="grid grid-cols-2 gap-2 py-3 sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-6"
+          aria-label="ניווט ניהול"
         >
-          התנתקות
-        </Button>
+          {adminLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={navLinkClassName(isActive(link.href, link.exact))}
+              aria-current={
+                isActive(link.href, link.exact) ? "page" : undefined
+              }
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
-    </div>
+    </header>
   );
 }

@@ -5,7 +5,11 @@ import PublicFooter from "@/components/PublicFooter";
 import PublicNavbar from "@/components/PublicNavbar";
 
 function isPublicCustomerRoute(pathname: string): boolean {
-  return pathname === "/" || pathname.startsWith("/book");
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/book") ||
+    pathname.startsWith("/review/")
+  );
 }
 
 export default function SiteChrome({

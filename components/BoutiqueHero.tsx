@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/Button";
+import PublicContactActions from "@/components/PublicContactActions";
 import type { BusinessSettings } from "@/lib/types";
 import { getPublicBusinessName } from "@/lib/business-config";
 import { getBrandColor, getPlaceholderGradient } from "@/lib/branding";
@@ -75,19 +76,14 @@ export default function BoutiqueHero({ settings }: BoutiqueHeroProps) {
             {businessName}
           </h1>
 
-          {settings.description ? (
+          <PublicContactActions settings={settings} className="mt-5" />
+
+          {settings.description && (
             <p className="lead mx-auto mt-4 max-w-md">{settings.description}</p>
-          ) : (
-            <p className="lead mx-auto mt-4 max-w-md">
-              חוויית הזמנה יוקרתית — פשוטה, נעימה ומותאמת אישית.
-            </p>
           )}
 
-          {(settings.phone || settings.email || settings.address) && (
+          {(settings.email || settings.address) && (
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {settings.phone && (
-                <span className="contact-chip ltr-value">{settings.phone}</span>
-              )}
               {settings.email && (
                 <span className="contact-chip ltr-value">{settings.email}</span>
               )}

@@ -15,7 +15,7 @@ const publicLinks = [
 function linkClassName(isLinkActive: boolean, compact = false): string {
   const base = compact
     ? "block rounded-xl px-4 py-3 text-sm font-semibold transition-colors"
-    : "inline-flex items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200";
+    : "inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold transition-all duration-200";
 
   if (isLinkActive) {
     return `${base} bg-[#FDF4FF] text-[#581C87] ring-1 ring-[#E9D5FF]`;
@@ -61,14 +61,11 @@ export default function PublicNavbar() {
   }, [mobileOpen]);
 
   return (
-    <header className="boutique-nav relative sticky top-0 z-50">
-      <nav
-        className="page-container relative flex h-20 min-h-[72px] flex-nowrap items-center gap-3"
-        aria-label="ניווט ראשי"
-      >
+    <header className="boutique-nav sticky top-0 z-50 h-[76px] shrink-0 overflow-hidden">
+      <div className="page-container flex h-[76px] items-center justify-between gap-3 overflow-hidden">
         <Link
           href="/"
-          className="flex min-w-0 max-w-[42vw] shrink items-center gap-2.5 transition-opacity hover:opacity-90 sm:max-w-[240px] md:max-w-[280px]"
+          className="flex min-w-0 max-w-[55%] items-center gap-2 overflow-hidden transition-opacity hover:opacity-90 sm:max-w-[320px]"
         >
           <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-bl from-[#581C87] to-[#BE185D] text-sm font-extrabold text-white shadow-md shadow-[#BE185D]/25">
             {settings.logoUrl ? (
@@ -88,10 +85,11 @@ export default function PublicNavbar() {
           </span>
         </Link>
 
-        <ul className="hidden flex-1 flex-nowrap items-center justify-center gap-1 md:flex">
-          {publicLinks.map((link) => (
-            <li key={link.href} className="shrink-0">
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
+          <nav className="flex items-center gap-1" aria-label="קישורי ניווט">
+            {publicLinks.map((link) => (
               <Link
+                key={link.href}
                 href={link.href}
                 className={linkClassName(isActive(link.href, link.exact))}
                 aria-current={
@@ -100,23 +98,20 @@ export default function PublicNavbar() {
               >
                 {link.label}
               </Link>
-            </li>
-          ))}
-        </ul>
-
-        <div className="hidden shrink-0 md:block">
+            ))}
+          </nav>
           <Link
             href="/login"
-            className="inline-flex items-center whitespace-nowrap text-xs font-medium text-[#6B7280]/90 transition-colors hover:text-[#BE185D]"
+            className="inline-flex h-10 items-center rounded-full px-4 text-xs font-medium text-[#6B7280]/90 transition-colors hover:bg-[#FFF1F5] hover:text-[#BE185D]"
           >
             כניסת מנהל
           </Link>
         </div>
 
-        <div className="ms-auto flex shrink-0 flex-nowrap items-center gap-2 md:hidden">
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
           <Link
             href="/book"
-            className={`inline-flex h-10 items-center whitespace-nowrap rounded-full px-4 text-sm font-bold shadow-sm transition-all ${
+            className={`inline-flex h-10 max-w-[132px] items-center justify-center truncate rounded-full px-4 text-sm font-bold shadow-sm transition-all ${
               isActive("/book", false)
                 ? "bg-[#581C87] text-white ring-2 ring-[#E9D5FF]"
                 : "bg-gradient-to-l from-[#7C3AED] to-[#BE185D] text-white hover:shadow-md"
@@ -156,19 +151,19 @@ export default function PublicNavbar() {
             </svg>
           </button>
         </div>
-      </nav>
+      </div>
 
       {mobileOpen && (
         <>
           <button
             type="button"
-            className="fixed inset-x-0 bottom-0 top-20 z-40 bg-[#581C87]/10 backdrop-blur-[1px] md:hidden"
+            className="fixed inset-x-0 bottom-0 top-[76px] z-40 bg-[#581C87]/10 backdrop-blur-[1px] md:hidden"
             aria-label="סגירת תפריט"
             onClick={() => setMobileOpen(false)}
           />
           <div
             id="public-mobile-menu"
-            className="absolute inset-x-0 top-full z-50 border-b border-[#F9A8D4]/25 bg-[#FFFDF8]/98 shadow-lg shadow-[#BE185D]/10 backdrop-blur-xl md:hidden"
+            className="fixed inset-x-0 top-[76px] z-50 border-b border-[#F9A8D4]/25 bg-[#FFFDF8]/98 shadow-lg shadow-[#BE185D]/10 backdrop-blur-xl md:hidden"
           >
             <div className="page-container py-4">
               <ul className="flex flex-col gap-1">
@@ -189,15 +184,6 @@ export default function PublicNavbar() {
                     </Link>
                   </li>
                 ))}
-                <li className="mt-2 border-t border-[#F9A8D4]/20 pt-3">
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-xl px-4 py-2.5 text-center text-xs font-medium text-[#6B7280] transition-colors hover:bg-[#FFF1F5] hover:text-[#BE185D]"
-                  >
-                    כניסת מנהל
-                  </Link>
-                </li>
               </ul>
             </div>
           </div>

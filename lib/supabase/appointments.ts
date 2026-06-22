@@ -130,6 +130,21 @@ export async function getAppointmentById(
   return mapAppointmentRow(data as AppointmentRow);
 }
 
+export async function getPublicAppointmentById(
+  id: string
+): Promise<Appointment | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return null;
+  }
+
+  return getAppointmentById(supabase, id);
+}
+
 export async function updateAppointmentSmsStatus(
   supabase: SupabaseClient,
   id: string,

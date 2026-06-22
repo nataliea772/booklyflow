@@ -20,6 +20,9 @@ type BusinessSettingsRow = {
   working_hours?: unknown;
   description?: string | null;
   phone?: string | null;
+  whatsapp_phone?: string | null;
+  location_url?: string | null;
+  waze_url?: string | null;
   email?: string | null;
   address?: string | null;
   logo_url?: string | null;
@@ -31,6 +34,9 @@ export type UpdateBusinessSettingsInput = {
   businessName?: string;
   description?: string | null;
   phone?: string | null;
+  whatsappPhone?: string | null;
+  locationUrl?: string | null;
+  wazeUrl?: string | null;
   email?: string | null;
   address?: string | null;
   logoUrl?: string | null;
@@ -60,6 +66,9 @@ function mapBusinessSettingsRow(row: BusinessSettingsRow): BusinessSettings {
     workingDays: row.working_days,
     description: row.description ?? undefined,
     phone: row.phone ?? undefined,
+    whatsappPhone: row.whatsapp_phone ?? undefined,
+    locationUrl: row.location_url ?? undefined,
+    wazeUrl: row.waze_url ?? undefined,
     email: row.email ?? undefined,
     address: row.address ?? undefined,
     logoUrl: row.logo_url ?? undefined,
@@ -81,6 +90,15 @@ function mapUpdateToRow(
   }
   if (input.phone !== undefined) {
     row.phone = input.phone?.trim() || null;
+  }
+  if (input.whatsappPhone !== undefined) {
+    row.whatsapp_phone = input.whatsappPhone?.trim() || null;
+  }
+  if (input.locationUrl !== undefined) {
+    row.location_url = input.locationUrl?.trim() || null;
+  }
+  if (input.wazeUrl !== undefined) {
+    row.waze_url = input.wazeUrl?.trim() || null;
   }
   if (input.email !== undefined) {
     row.email = input.email?.trim() || null;

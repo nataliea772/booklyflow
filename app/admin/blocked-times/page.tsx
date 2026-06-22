@@ -169,8 +169,10 @@ export default function BlockedTimesPage() {
   if (!isReady) {
     return (
       <>
-        <AdminNav />
-        <div className="page-container flex min-h-[40vh] items-center justify-center py-20">
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <div className="page-container flex min-h-[40vh] items-center justify-center pb-16">
           <div className="loader-premium" role="status" aria-label="טוען" />
         </div>
       </>
@@ -179,25 +181,18 @@ export default function BlockedTimesPage() {
 
   return (
     <>
-      <AdminNav />
+      <div className="page-container pt-4 sm:pt-6">
+        <AdminNav />
+      </div>
 
-      <div className="page-container pb-16 pt-2">
+      <div className="page-container pb-16">
         <div className="mx-auto max-w-4xl space-y-8">
-          <div>
-            <h1 className="text-2xl font-extrabold text-[#111827] sm:text-3xl">
-              חסימות וחופשות
-            </h1>
-            <p className="mt-2 text-sm text-muted sm:text-base">
-              חסמו תאריך בודד, טווח חופשה או שעות ספציפיות — הלקוחות לא יוכלו
-              להזמין בזמנים אלו.
+          {!usesDatabase && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              מצב הדגמה: חסימות נשמרות בזיכרון בלבד. חברי Supabase לשמירה
+              קבועה.
             </p>
-            {!usesDatabase && (
-              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                מצב הדגמה: חסימות נשמרות בזיכרון בלבד. חברי Supabase לשמירה
-                קבועה.
-              </p>
-            )}
-          </div>
+          )}
 
           <Card glass accent="primary" padding="lg">
             <CardHeader

@@ -152,20 +152,11 @@ export default function ServicesPage() {
 
   return (
     <>
-      <section className="page-header-bg">
-        <div className="page-container relative py-14 sm:py-16 lg:py-20">
-          <AdminNav />
-          <Badge variant="primary" className="mb-5">
-            שירותים
-          </Badge>
-          <h1 className="display-section">ניהול שירותים</h1>
-          <p className="lead mt-4 max-w-2xl">
-            הגדרת השירותים שהלקוחות שלכם יכולים להזמין.
-          </p>
-        </div>
-      </section>
+      <div className="page-container pt-4 sm:pt-6">
+        <AdminNav />
+      </div>
 
-      <div className="page-container py-12 sm:py-16 lg:py-20">
+      <div className="page-container pb-12 sm:pb-16">
         {actionError && (
           <p className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {actionError}

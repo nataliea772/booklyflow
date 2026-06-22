@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import {
-  buildAppointmentSmsMessage,
-  sendSms,
-  type SmsEventType,
-} from "@/lib/server/sms";
+  buildAppointmentWhatsAppMessage,
+  sendWhatsAppMessage,
+  type WhatsAppEventType,
+} from "@/lib/server/whatsapp";
+import { buildReviewLink } from "@/lib/review-links";
 import { recordAppointmentNotification } from "@/lib/supabase/appointment-notifications";
 import { verifyAuthenticatedAdmin } from "@/lib/server/supabase-auth";
 import { getAppointmentById } from "@/lib/supabase/appointments";
@@ -11,34 +12,53 @@ import { fetchBusinessSettingsSafe } from "@/lib/supabase/fetch-business-setting
 import { getServiceById } from "@/lib/supabase/services";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
-type SmsNotificationRequest = {
+type WhatsAppNotificationRequest = {
   appointmentId?: string;
-  eventType?: SmsEventType;
+  eventType?: WhatsAppEventType;
 };
 
-const VALID_EVENT_TYPES: SmsEventType[] = [
+const VALID_EVENT_TYPES: WhatsAppEventType[] = [
   "confirmed",
   "cancelled",
   "rescheduled",
+  "review_request",
 ];
 
-function isSmsEventType(value: unknown): value is SmsEventType {
+function isWhatsAppEventType(value: unknown): value is WhatsAppEventType {
   return (
     typeof value === "string" &&
-    VALID_EVENT_TYPES.includes(value as SmsEventType)
+    VALID_EVENT_TYPES.includes(value as WhatsAppEventType)
   );
 }
 
+function getRequestOrigin(request: Request): string | undefined {
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    new URL(request.url).protocol.replace(":", "");
+
+  if (host) {
+    return `${proto}://${host}`;
+  }
+
+  return new URL(request.url).origin;
+}
+
 function validateEventForAppointment(
-  eventType: SmsEventType,
+  eventType: WhatsAppEventType,
   status: string
 ): string | null {
   if (eventType === "confirmed" && status !== "confirmed") {
-    return "SMS confirmation requires a confirmed appointment.";
+    return "WhatsApp confirmation requires a confirmed appointment.";
   }
 
   if (eventType === "cancelled" && status !== "cancelled") {
-    return "SMS cancellation requires a cancelled appointment.";
+    return "WhatsApp cancellation requires a cancelled appointment.";
+  }
+
+  if (eventType === "review_request" && status !== "completed") {
+    return "WhatsApp review request requires a completed appointment.";
   }
 
   return null;
@@ -53,9 +73,9 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: SmsNotificationRequest;
+  let body: WhatsAppNotificationRequest;
   try {
-    body = (await request.json()) as SmsNotificationRequest;
+    body = (await request.json()) as WhatsAppNotificationRequest;
   } catch {
     return NextResponse.json(
       { success: false, error: "Invalid request body." },
@@ -64,7 +84,7 @@ export async function POST(request: Request) {
   }
 
   const appointmentId = body.appointmentId?.trim();
-  const eventType = isSmsEventType(body.eventType)
+  const eventType = isWhatsAppEventType(body.eventType)
     ? body.eventType
     : "confirmed";
 
@@ -78,7 +98,7 @@ export async function POST(request: Request) {
   if (!isSupabaseConfigured() || !auth.supabase) {
     return NextResponse.json({
       success: false,
-      error: "SMS notifications require Supabase configuration.",
+      error: "WhatsApp notifications require Supabase configuration.",
     });
   }
 
@@ -101,11 +121,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const [service, businessSettings] = await Promise.all([
-    getServiceById(auth.supabase, appointment.serviceId),
-    fetchBusinessSettingsSafe(auth.supabase),
-  ]);
-
+  const service = await getServiceById(auth.supabase, appointment.serviceId);
   if (!service) {
     await recordAppointmentNotification(auth.supabase, {
       appointmentId,
@@ -120,15 +136,26 @@ export async function POST(request: Request) {
     });
   }
 
-  const message = buildAppointmentSmsMessage(
+  const businessSettings = await fetchBusinessSettingsSafe(auth.supabase);
+  const reviewLink =
+    eventType === "review_request"
+      ? buildReviewLink(appointmentId, getRequestOrigin(request))
+      : undefined;
+
+  const message = buildAppointmentWhatsAppMessage(
     eventType,
     appointment,
     service,
-    businessSettings
+    businessSettings,
+    reviewLink
   );
-  const smsResult = await sendSms(appointment.customerPhone, message);
 
-  if (smsResult.success) {
+  const whatsAppResult = await sendWhatsAppMessage(
+    appointment.customerPhone,
+    message
+  );
+
+  if (whatsAppResult.success) {
     await recordAppointmentNotification(auth.supabase, {
       appointmentId,
       eventType,
@@ -142,12 +169,12 @@ export async function POST(request: Request) {
     appointmentId,
     eventType,
     status: "failed",
-    error: smsResult.error ?? "Failed to send SMS.",
+    error: whatsAppResult.error ?? "Failed to send WhatsApp.",
   });
 
   return NextResponse.json({
     success: false,
-    error: smsResult.error ?? "Failed to send SMS.",
+    error: whatsAppResult.error ?? "Failed to send WhatsApp.",
     eventType,
   });
 }

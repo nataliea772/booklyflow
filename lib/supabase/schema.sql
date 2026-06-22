@@ -42,6 +42,9 @@ create table if not exists business_settings (
   working_hours jsonb,
   description text,
   phone text,
+  whatsapp_phone text,
+  location_url text,
+  waze_url text,
   email text,
   address text,
   logo_url text,
@@ -66,7 +69,7 @@ create table if not exists appointment_notifications (
   id uuid primary key default gen_random_uuid(),
   appointment_id uuid references appointments(id) on delete cascade not null,
   event_type text not null,
-  channel text not null default 'sms',
+  channel text not null default 'whatsapp',
   status text not null,
   error text,
   created_at timestamptz default now()
@@ -75,11 +78,26 @@ create table if not exists appointment_notifications (
 create index if not exists appointment_notifications_appointment_id_idx
   on appointment_notifications (appointment_id);
 
+create table if not exists customer_reviews (
+  id uuid primary key default gen_random_uuid(),
+  appointment_id uuid references appointments(id),
+  customer_name text not null,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text,
+  is_visible boolean default true,
+  created_at timestamptz default now()
+);
+
+create unique index if not exists customer_reviews_appointment_id_key
+  on customer_reviews (appointment_id)
+  where appointment_id is not null;
+
 alter table services enable row level security;
 alter table appointments enable row level security;
 alter table business_settings enable row level security;
 alter table blocked_times enable row level security;
 alter table appointment_notifications enable row level security;
+alter table customer_reviews enable row level security;
 
 create policy "services_public_read_active"
   on services for select
@@ -136,6 +154,30 @@ create policy "appointment_notifications_authenticated_insert"
 
 create policy "appointment_notifications_authenticated_read"
   on appointment_notifications for select
+  to authenticated
+  using (auth.role() = 'authenticated');
+
+create policy "customer_reviews_public_read_visible"
+  on customer_reviews for select
+  using (is_visible = true);
+
+create policy "customer_reviews_authenticated_read_all"
+  on customer_reviews for select
+  to authenticated
+  using (auth.role() = 'authenticated');
+
+create policy "customer_reviews_public_insert"
+  on customer_reviews for insert
+  with check (appointment_id is not null);
+
+create policy "customer_reviews_authenticated_update"
+  on customer_reviews for update
+  to authenticated
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
+create policy "customer_reviews_authenticated_delete"
+  on customer_reviews for delete
   to authenticated
   using (auth.role() = 'authenticated');
 

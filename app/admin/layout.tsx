@@ -5,5 +5,9 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AdminAuthGuard>{children}</AdminAuthGuard>;
+  return (
+    <div className="overflow-x-hidden">
+      <AdminAuthGuard>{children}</AdminAuthGuard>
+    </div>
+  );
 }

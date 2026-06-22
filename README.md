@@ -162,7 +162,7 @@ lib/supabase/migrations/005_working_hours_and_blocked_times.sql
 
 This adds `business_settings.working_hours` (JSONB), updates `blocked_times` for full-day and time-range blocks, and RLS policies for admin CRUD on blocked times.
 
-For **SMS confirmation tracking** on appointments, run:
+For **appointment notification tracking** (legacy columns on appointments), run:
 
 ```
 lib/supabase/migrations/006_sms_notifications.sql
@@ -180,7 +180,7 @@ For **blocked time date ranges** (vacations and multi-day unavailable periods), 
 lib/supabase/migrations/008_blocked_time_ranges.sql
 ```
 
-For **SMS event tracking** (confirm, cancel, reschedule notifications), run:
+For **appointment notification event tracking** (confirm, cancel, reschedule, review request), run:
 
 ```
 lib/supabase/migrations/009_sms_event_tracking.sql
@@ -190,6 +190,30 @@ For **booking window** (how far ahead customers can book), run:
 
 ```
 lib/supabase/migrations/010_booking_window_and_daily_appointments.sql
+```
+
+For **customer reviews**, run:
+
+```
+lib/supabase/migrations/011_customer_reviews.sql
+```
+
+For **business contact links** (WhatsApp, Waze, Maps), run:
+
+```
+lib/supabase/migrations/012_business_contact_links.sql
+```
+
+For **customer review links** (reviews tied to completed appointments), run:
+
+```
+lib/supabase/migrations/013_customer_review_links.sql
+```
+
+For **WhatsApp notification channel default**, run:
+
+```
+lib/supabase/migrations/014_whatsapp_notifications.sql
 ```
 
 ### 3. Configure environment variables
@@ -203,20 +227,22 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 Find these values under **Project Settings → API** in Supabase. Use the project URL only (not the `/rest/v1` path).
 
-#### Optional: SMS notifications (Twilio)
+#### Optional: WhatsApp notifications (Twilio)
 
-Add these **server-only** variables to `.env.local` to send SMS when an admin confirms, cancels, or reschedules an appointment. Do not commit real values.
+Add these **server-only** variables to `.env.local` to send automated WhatsApp messages when an admin confirms, cancels, reschedules, or completes an appointment (review link). Messages are sent **server-side only** — never expose these credentials to the browser. Do not commit real values.
 
 ```env
-SMS_PROVIDER=twilio
-SMS_ACCOUNT_SID=your-twilio-account-sid
-SMS_AUTH_TOKEN=your-twilio-auth-token
-SMS_FROM_NUMBER=+15551234567
+WHATSAPP_PROVIDER=twilio
+WHATSAPP_ACCOUNT_SID=your-twilio-account-sid
+WHATSAPP_AUTH_TOKEN=your-twilio-auth-token
+WHATSAPP_FROM_NUMBER=+14155238886
 ```
 
-If SMS credentials are missing, appointment actions still succeed and the admin sees a non-blocking warning.
+Use a Twilio WhatsApp-enabled sender number for `WHATSAPP_FROM_NUMBER` (for example a sandbox or approved business number).
 
-Run migration `009_sms_event_tracking.sql` in Supabase to record notification history in `appointment_notifications`.
+If WhatsApp credentials are missing, appointment actions still succeed and the admin sees a non-blocking warning.
+
+Run migration `009_sms_event_tracking.sql` in Supabase to create `appointment_notifications`, then `014_whatsapp_notifications.sql` to set the default channel to `whatsapp`.
 
 After booking at `/book`, customers are redirected to `/thank-you?appointmentId=...` with a Hebrew summary (no admin notes).
 

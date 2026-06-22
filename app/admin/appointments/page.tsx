@@ -24,7 +24,7 @@ import { getTodayDateString } from "@/lib/dates";
 import {
   appointmentStatusLabels,
 } from "@/lib/i18n";
-import { sendAppointmentSms } from "@/lib/notifications/send-appointment-sms";
+import { sendAppointmentWhatsApp } from "@/lib/notifications/send-appointment-whatsapp";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 
 type ConfirmNotice = {
@@ -165,16 +165,19 @@ export default function AppointmentsPage() {
 
     if (scheduleChanged) {
       setConfirmNotice(null);
-      const smsResult = await sendAppointmentSms(appointmentId, "rescheduled");
+      const whatsAppResult = await sendAppointmentWhatsApp(
+        appointmentId,
+        "rescheduled"
+      );
       setConfirmNotice(
-        smsResult.success
+        whatsAppResult.success
           ? {
               type: "success",
-              message: "התור עודכן ונשלחה הודעת SMS",
+              message: "התור עודכן ונשלחה הודעת WhatsApp",
             }
           : {
               type: "warning",
-              message: "התור עודכן, אך שליחת ה-SMS נכשלה",
+              message: "התור עודכן, אך שליחת הודעת ה-WhatsApp נכשלה",
             }
       );
     }
@@ -189,16 +192,19 @@ export default function AppointmentsPage() {
     try {
       await updateAppointmentStatus(appointmentId, "confirmed");
 
-      const smsResult = await sendAppointmentSms(appointmentId, "confirmed");
+      const whatsAppResult = await sendAppointmentWhatsApp(
+        appointmentId,
+        "confirmed"
+      );
       setConfirmNotice(
-        smsResult.success
+        whatsAppResult.success
           ? {
               type: "success",
-              message: "התור אושר ונשלחה הודעת SMS ללקוחה",
+              message: "התור אושר ונשלחה הודעת WhatsApp",
             }
           : {
               type: "warning",
-              message: "התור אושר, אך שליחת ה-SMS נכשלה",
+              message: "התור אושר, אך שליחת הודעת ה-WhatsApp נכשלה",
             }
       );
     } finally {
@@ -210,16 +216,41 @@ export default function AppointmentsPage() {
     setConfirmNotice(null);
     await updateAppointmentStatus(appointmentId, "cancelled");
 
-    const smsResult = await sendAppointmentSms(appointmentId, "cancelled");
+    const whatsAppResult = await sendAppointmentWhatsApp(
+      appointmentId,
+      "cancelled"
+    );
     setConfirmNotice(
-      smsResult.success
+      whatsAppResult.success
         ? {
             type: "success",
-            message: "התור בוטל ונשלחה הודעת SMS",
+            message: "התור בוטל ונשלחה הודעת WhatsApp",
           }
         : {
             type: "warning",
-            message: "התור בוטל, אך שליחת ה-SMS נכשלה",
+            message: "התור בוטל, אך שליחת הודעת ה-WhatsApp נכשלה",
+          }
+    );
+  }
+
+  async function handleComplete(appointmentId: string) {
+    setConfirmNotice(null);
+    await updateAppointmentStatus(appointmentId, "completed");
+
+    const whatsAppResult = await sendAppointmentWhatsApp(
+      appointmentId,
+      "review_request"
+    );
+    setConfirmNotice(
+      whatsAppResult.success
+        ? {
+            type: "success",
+            message: "התור סומן כהושלם ונשלח קישור ביקורת ב-WhatsApp",
+          }
+        : {
+            type: "warning",
+            message:
+              "התור סומן כהושלם, אך שליחת קישור הביקורת ב-WhatsApp נכשלה",
           }
     );
   }
@@ -333,9 +364,7 @@ export default function AppointmentsPage() {
                   size="sm"
                   variant="outline"
                   data-testid={`complete-appointment-${appointment.id}`}
-                  onClick={() =>
-                    updateAppointmentStatus(appointment.id, "completed")
-                  }
+                  onClick={() => handleComplete(appointment.id)}
                 >
                   סימון כהושלם
                 </Button>
@@ -378,49 +407,40 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <section className="page-header-bg">
-        <div className="page-container relative py-14 sm:py-16 lg:py-20">
-          <AdminNav />
-          <Badge variant="primary" className="mb-5">
-            ניהול תורים
-          </Badge>
-          <h1 className="display-section">כל התורים</h1>
-          <p className="lead mt-4 max-w-2xl">
-            צפייה, עריכה, אישור וביטול של הזמנות לקוחות.
+      <div className="page-container pt-4 sm:pt-6">
+        <AdminNav />
+      </div>
+
+      <div className="page-container pb-12 sm:pb-16">
+        {confirmNotice && (
+          <p
+            className={`mb-6 rounded-2xl px-4 py-3 text-sm font-medium ${
+              confirmNotice.type === "success"
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+            data-testid="confirm-appointment-notice"
+          >
+            {confirmNotice.message}
           </p>
+        )}
 
-          {confirmNotice && (
-            <p
-              className={`mt-6 rounded-2xl px-4 py-3 text-sm font-medium ${
-                confirmNotice.type === "success"
-                  ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border border-amber-200 bg-amber-50 text-amber-900"
-              }`}
-              data-testid="confirm-appointment-notice"
-            >
-              {confirmNotice.message}
-            </p>
-          )}
+        {appointments.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <Badge variant="neutral">{appointments.length} סה״כ</Badge>
+            {statusCounts.confirmed ? (
+              <Badge variant="primary">
+                ✅ {statusCounts.confirmed} מאושרים
+              </Badge>
+            ) : null}
+            {statusCounts.pending ? (
+              <Badge variant="secondary">
+                ⏳ {statusCounts.pending} ממתינים
+              </Badge>
+            ) : null}
+          </div>
+        )}
 
-          {appointments.length > 0 && (
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Badge variant="neutral">{appointments.length} סה״כ</Badge>
-              {statusCounts.confirmed ? (
-                <Badge variant="primary">
-                  ✅ {statusCounts.confirmed} מאושרים
-                </Badge>
-              ) : null}
-              {statusCounts.pending ? (
-                <Badge variant="secondary">
-                  ⏳ {statusCounts.pending} ממתינים
-                </Badge>
-              ) : null}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <div className="page-container py-12 sm:py-16 lg:py-20">
         {appointments.length === 0 ? (
           <EmptyState
             icon="📋"
