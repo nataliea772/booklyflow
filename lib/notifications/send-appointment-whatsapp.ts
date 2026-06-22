@@ -1,11 +1,19 @@
 import { isAuthRequired } from "@/lib/supabase/auth";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import type { WhatsAppEventType } from "@/lib/server/whatsapp";
+import type { WhatsAppEventType } from "@/lib/whatsapp-messages";
+
+export type WhatsAppNotificationReason =
+  | "missing_credentials"
+  | "provider_error";
 
 export type SendAppointmentWhatsAppResult = {
   success: boolean;
   error?: string;
+  message?: string;
   eventType?: WhatsAppEventType;
+  errorCode?: WhatsAppNotificationReason;
+  /** @deprecated Use errorCode */
+  reason?: WhatsAppNotificationReason;
 };
 
 export async function sendAppointmentWhatsApp(
@@ -35,16 +43,24 @@ export async function sendAppointmentWhatsApp(
     });
 
     const payload = (await response.json()) as SendAppointmentWhatsAppResult;
+    const errorCode = payload.errorCode ?? payload.reason;
 
     if (!response.ok) {
       return {
         success: false,
-        error: payload.error ?? "Failed to send appointment WhatsApp.",
+        error: payload.error ?? payload.message ?? "Failed to send appointment WhatsApp.",
+        message: payload.message,
         eventType,
+        errorCode,
+        reason: errorCode,
       };
     }
 
-    return payload;
+    return {
+      ...payload,
+      errorCode,
+      reason: errorCode,
+    };
   } catch (error) {
     return {
       success: false,

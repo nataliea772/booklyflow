@@ -275,3 +275,47 @@ export async function updateAppointmentStatus(
 ): Promise<Appointment | null> {
   return updateAppointment(id, { status });
 }
+
+export type DeleteAppointmentErrorCode = "foreign_key" | "not_found" | "unknown";
+
+export class DeleteAppointmentError extends Error {
+  constructor(public code: DeleteAppointmentErrorCode) {
+    super(code);
+    this.name = "DeleteAppointmentError";
+  }
+}
+
+export async function deleteAppointment(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    throw new DeleteAppointmentError("unknown");
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new DeleteAppointmentError("unknown");
+  }
+
+  const normalizedId = id.trim();
+  if (!isValidAppointmentId(normalizedId)) {
+    throw new DeleteAppointmentError("not_found");
+  }
+
+  const { error, count } = await supabase
+    .from("appointments")
+    .delete({ count: "exact" })
+    .eq("id", normalizedId);
+
+  if (error) {
+    logSupabaseIssue("Failed to delete appointment", error, { id: normalizedId });
+
+    if (error.code === "23503") {
+      throw new DeleteAppointmentError("foreign_key");
+    }
+
+    throw new DeleteAppointmentError("unknown");
+  }
+
+  if (count === 0) {
+    throw new DeleteAppointmentError("not_found");
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import AppointmentEditForm from "@/components/AppointmentEditForm";
 import Badge from "@/components/Badge";
@@ -13,24 +13,27 @@ import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { useServices } from "@/hooks/useServices";
 import { hasScheduleChanged } from "@/lib/appointment-schedule";
 import {
+  buildWhatsAppActionNotice,
+  type WhatsAppActionNotice,
+} from "@/lib/appointment-whatsapp-manual";
+import {
   filterAppointmentsWithQuickRange,
   type AppointmentQuickFilter,
   type AppointmentStatusFilter,
 } from "@/lib/appointment-filters";
 import { groupAppointmentsByDay } from "@/lib/appointment-groups";
 import { isAppointmentPast } from "@/lib/appointment-edit";
+import { canDeleteAppointment } from "@/lib/appointment-delete";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
 import { getTodayDateString } from "@/lib/dates";
 import {
   appointmentStatusLabels,
 } from "@/lib/i18n";
 import { sendAppointmentWhatsApp } from "@/lib/notifications/send-appointment-whatsapp";
+import type { WhatsAppEventType } from "@/lib/whatsapp-messages";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 
-type ConfirmNotice = {
-  type: "success" | "warning";
-  message: string;
-};
+const NOTICE_DISMISS_MS = 12000;
 
 const statusStyles: Record<
   AppointmentStatus,
@@ -81,19 +84,71 @@ const QUICK_FILTER_OPTIONS: {
 ];
 
 export default function AppointmentsPage() {
-  const { appointments, updateAppointment, updateAppointmentStatus, isReady } =
+  const { appointments, updateAppointment, updateAppointmentStatus, deleteAppointment, isReady } =
     useAppointments();
   const { services } = useServices();
   const { settings: businessSettings } = useBusinessSettings();
   const { blockedTimes } = useBlockedTimes();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [confirmNotice, setConfirmNotice] = useState<ConfirmNotice | null>(null);
+  const [confirmNotice, setConfirmNotice] = useState<WhatsAppActionNotice | null>(
+    null
+  );
+  const [deleteNotice, setDeleteNotice] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatusFilter>("all");
   const [dateFilter, setDateFilter] = useState("");
   const [quickFilter, setQuickFilter] = useState<AppointmentQuickFilter>("all");
   const today = getTodayDateString();
+
+  useEffect(() => {
+    if (!confirmNotice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setConfirmNotice(null);
+    }, NOTICE_DISMISS_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [confirmNotice]);
+
+  useEffect(() => {
+    if (!deleteNotice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDeleteNotice(null);
+    }, NOTICE_DISMISS_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [deleteNotice]);
+
+  function showWhatsAppNotice(
+    appointment: Appointment,
+    eventType: WhatsAppEventType,
+    whatsAppResult: Awaited<ReturnType<typeof sendAppointmentWhatsApp>>
+  ) {
+    setConfirmNotice(
+      buildWhatsAppActionNotice(
+        appointment,
+        eventType,
+        whatsAppResult,
+        services,
+        businessSettings,
+        window.location.origin
+      )
+    );
+  }
 
   const filteredAppointments = useMemo(
     () =>
@@ -169,16 +224,16 @@ export default function AppointmentsPage() {
         appointmentId,
         "rescheduled"
       );
-      setConfirmNotice(
-        whatsAppResult.success
-          ? {
-              type: "success",
-              message: "התור עודכן ונשלחה הודעת WhatsApp",
-            }
-          : {
-              type: "warning",
-              message: "התור עודכן, אך שליחת הודעת ה-WhatsApp נכשלה",
-            }
+      showWhatsAppNotice(
+        {
+          ...existing,
+          serviceId: input.serviceId,
+          customerPhone: input.customerPhone,
+          appointmentDate: input.appointmentDate,
+          startTime: input.startTime,
+        },
+        "rescheduled",
+        whatsAppResult
       );
     }
 
@@ -189,6 +244,12 @@ export default function AppointmentsPage() {
     setConfirmNotice(null);
     setConfirmingId(appointmentId);
 
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment) {
+      setConfirmingId(null);
+      return;
+    }
+
     try {
       await updateAppointmentStatus(appointmentId, "confirmed");
 
@@ -196,16 +257,10 @@ export default function AppointmentsPage() {
         appointmentId,
         "confirmed"
       );
-      setConfirmNotice(
-        whatsAppResult.success
-          ? {
-              type: "success",
-              message: "התור אושר ונשלחה הודעת WhatsApp",
-            }
-          : {
-              type: "warning",
-              message: "התור אושר, אך שליחת הודעת ה-WhatsApp נכשלה",
-            }
+      showWhatsAppNotice(
+        { ...appointment, status: "confirmed" },
+        "confirmed",
+        whatsAppResult
       );
     } finally {
       setConfirmingId(null);
@@ -214,45 +269,83 @@ export default function AppointmentsPage() {
 
   async function handleCancel(appointmentId: string) {
     setConfirmNotice(null);
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment) {
+      return;
+    }
+
     await updateAppointmentStatus(appointmentId, "cancelled");
 
     const whatsAppResult = await sendAppointmentWhatsApp(
       appointmentId,
       "cancelled"
     );
-    setConfirmNotice(
-      whatsAppResult.success
-        ? {
-            type: "success",
-            message: "התור בוטל ונשלחה הודעת WhatsApp",
-          }
-        : {
-            type: "warning",
-            message: "התור בוטל, אך שליחת הודעת ה-WhatsApp נכשלה",
-          }
+    showWhatsAppNotice(
+      { ...appointment, status: "cancelled" },
+      "cancelled",
+      whatsAppResult
     );
   }
 
   async function handleComplete(appointmentId: string) {
     setConfirmNotice(null);
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment) {
+      return;
+    }
+
     await updateAppointmentStatus(appointmentId, "completed");
 
     const whatsAppResult = await sendAppointmentWhatsApp(
       appointmentId,
       "review_request"
     );
-    setConfirmNotice(
-      whatsAppResult.success
-        ? {
-            type: "success",
-            message: "התור סומן כהושלם ונשלח קישור ביקורת ב-WhatsApp",
-          }
-        : {
-            type: "warning",
-            message:
-              "התור סומן כהושלם, אך שליחת קישור הביקורת ב-WhatsApp נכשלה",
-          }
+    showWhatsAppNotice(
+      { ...appointment, status: "completed" },
+      "review_request",
+      whatsAppResult
     );
+  }
+
+  async function handleDelete(appointmentId: string) {
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment || !canDeleteAppointment(appointment.status)) {
+      return;
+    }
+
+    if (!window.confirm("האם למחוק את התור לצמיתות?")) {
+      return;
+    }
+
+    setDeleteNotice(null);
+    setDeletingId(appointmentId);
+
+    try {
+      const result = await deleteAppointment(appointmentId);
+
+      if (result.ok) {
+        setDeleteNotice({
+          type: "success",
+          message: "התור נמחק בהצלחה",
+        });
+        return;
+      }
+
+      if (result.code === "foreign_key") {
+        setDeleteNotice({
+          type: "error",
+          message: "לא ניתן למחוק את התור כי קיימים נתונים מקושרים",
+        });
+        return;
+      }
+
+      setDeleteNotice({
+        type: "error",
+        message: "לא הצלחנו למחוק את התור",
+      });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function handleQuickFilterChange(nextFilter: AppointmentQuickFilter) {
@@ -276,6 +369,7 @@ export default function AppointmentsPage() {
     const canCancel =
       appointment.status === "pending" ||
       appointment.status === "confirmed";
+    const canDelete = canDeleteAppointment(appointment.status);
     const isPast = isAppointmentPast(appointment, today);
     const isEditing = editingId === appointment.id;
 
@@ -378,6 +472,19 @@ export default function AppointmentsPage() {
                   ביטול
                 </Button>
               )}
+              {canDelete && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={deletingId === appointment.id}
+                  onClick={() => handleDelete(appointment.id)}
+                  data-testid={`delete-appointment-${appointment.id}`}
+                  className="border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50"
+                >
+                  {deletingId === appointment.id ? "מוחק…" : "מחיקת תור"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -412,8 +519,21 @@ export default function AppointmentsPage() {
       </div>
 
       <div className="page-container pb-12 sm:pb-16">
+        {deleteNotice && (
+          <div
+            className={`mb-6 rounded-2xl px-4 py-3 text-sm font-medium ${
+              deleteNotice.type === "success"
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border border-red-200 bg-red-50 text-red-800"
+            }`}
+            data-testid="delete-appointment-notice"
+          >
+            {deleteNotice.message}
+          </div>
+        )}
+
         {confirmNotice && (
-          <p
+          <div
             className={`mb-6 rounded-2xl px-4 py-3 text-sm font-medium ${
               confirmNotice.type === "success"
                 ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
@@ -421,8 +541,19 @@ export default function AppointmentsPage() {
             }`}
             data-testid="confirm-appointment-notice"
           >
-            {confirmNotice.message}
-          </p>
+            <p>{confirmNotice.message}</p>
+            {confirmNotice.manualWhatsAppHref && (
+              <a
+                href={confirmNotice.manualWhatsAppHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="manual-whatsapp-link"
+                className="mt-3 inline-flex items-center rounded-full bg-gradient-to-l from-charcoal to-rose px-4 py-2 text-xs font-bold text-white shadow-md transition-opacity hover:opacity-90"
+              >
+                שליחה ידנית ב-WhatsApp
+              </a>
+            )}
+          </div>
         )}
 
         {appointments.length > 0 && (

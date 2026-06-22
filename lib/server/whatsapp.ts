@@ -1,17 +1,14 @@
-import { formatTimeLabel } from "@/lib/availability";
-import { getPublicBusinessName } from "@/lib/business-config";
-import { formatDisplayDate } from "@/lib/i18n";
-import type { Appointment, BusinessSettings, Service } from "@/lib/types";
+import {
+  buildAppointmentWhatsAppMessage,
+  type WhatsAppEventType,
+} from "@/lib/whatsapp-messages";
 
-export type WhatsAppEventType =
-  | "confirmed"
-  | "cancelled"
-  | "rescheduled"
-  | "review_request";
+export type { WhatsAppEventType };
 
 export type WhatsAppSendResult = {
   success: boolean;
   error?: string;
+  reason?: "missing_credentials" | "provider_error";
 };
 
 type TwilioWhatsAppConfig = {
@@ -19,6 +16,8 @@ type TwilioWhatsAppConfig = {
   authToken: string;
   fromNumber: string;
 };
+
+export { buildAppointmentWhatsAppMessage };
 
 export function isWhatsAppConfigured(): boolean {
   return Boolean(getActiveWhatsAppProvider());
@@ -75,32 +74,12 @@ function formatWhatsAppAddress(number: string): string {
     : `whatsapp:${normalized}`;
 }
 
-export function buildAppointmentWhatsAppMessage(
-  eventType: WhatsAppEventType,
-  appointment: Pick<Appointment, "appointmentDate" | "startTime">,
-  service: Pick<Service, "name">,
-  businessSettings: Pick<BusinessSettings, "businessName">,
-  reviewLink?: string
-): string {
-  const businessName = getPublicBusinessName(businessSettings);
-  const date = formatDisplayDate(appointment.appointmentDate);
-  const time = formatTimeLabel(appointment.startTime);
-
-  switch (eventType) {
-    case "confirmed":
-      return `התור שלך ב-${businessName} אושר לתאריך ${date} בשעה ${time}. נשמח לראותך!`;
-    case "cancelled":
-      return `התור שלך ב-${businessName} לתאריך ${date} בשעה ${time} בוטל. לפרטים נוספים ניתן ליצור קשר עם העסק.`;
-    case "rescheduled":
-      return `התור שלך ב-${businessName} עודכן לתאריך ${date} בשעה ${time}.`;
-    case "review_request": {
-      if (!reviewLink) {
-        throw new Error("reviewLink is required for review_request WhatsApp.");
-      }
-
-      return `תודה שביקרת ב-${businessName}! נשמח לשמוע איך הייתה החוויה שלך עבור התור: ${service.name}. לדירוג: ${reviewLink}`;
-    }
-  }
+function missingCredentialsResult(): WhatsAppSendResult {
+  return {
+    success: false,
+    reason: "missing_credentials",
+    error: "WhatsApp provider is not configured.",
+  };
 }
 
 async function sendViaTwilioWhatsApp(
@@ -111,6 +90,7 @@ async function sendViaTwilioWhatsApp(
   if (!config) {
     return {
       success: false,
+      reason: "missing_credentials",
       error: "Twilio WhatsApp credentials are not configured.",
     };
   }
@@ -142,6 +122,7 @@ async function sendViaTwilioWhatsApp(
       const errorBody = await response.text();
       return {
         success: false,
+        reason: "provider_error",
         error: `Twilio error (${response.status}): ${errorBody.slice(0, 200)}`,
       };
     }
@@ -150,6 +131,7 @@ async function sendViaTwilioWhatsApp(
   } catch (error) {
     return {
       success: false,
+      reason: "provider_error",
       error:
         error instanceof Error
           ? error.message
@@ -164,19 +146,17 @@ export async function sendWhatsAppMessage(
 ): Promise<WhatsAppSendResult> {
   const provider = process.env.WHATSAPP_PROVIDER?.trim().toLowerCase();
 
+  if (!provider) {
+    return missingCredentialsResult();
+  }
+
   if (provider === "twilio") {
     return sendViaTwilioWhatsApp(to, message);
   }
 
-  if (!provider) {
-    return {
-      success: false,
-      error: "WhatsApp provider is not configured.",
-    };
-  }
-
   return {
     success: false,
+    reason: "provider_error",
     error: `Unsupported WhatsApp provider: ${provider}`,
   };
 }

@@ -80,7 +80,7 @@ create index if not exists appointment_notifications_appointment_id_idx
 
 create table if not exists customer_reviews (
   id uuid primary key default gen_random_uuid(),
-  appointment_id uuid references appointments(id),
+  appointment_id uuid references appointments(id) on delete set null,
   customer_name text not null,
   rating integer not null check (rating >= 1 and rating <= 5),
   comment text,
@@ -122,6 +122,11 @@ create policy "appointments_authenticated_update"
   to authenticated
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
+
+create policy "appointments_authenticated_delete"
+  on appointments for delete
+  to authenticated
+  using (auth.role() = 'authenticated');
 
 create policy "business_settings_public_read"
   on business_settings for select

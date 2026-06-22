@@ -4,6 +4,7 @@ import type { Appointment, AppointmentStatus } from "./types";
 export const APPOINTMENTS_STORAGE_KEY = "booklyflow-appointments";
 const STATUS_OVERRIDES_STORAGE_KEY = "booklyflow-appointment-status-overrides";
 const APPOINTMENT_EDITS_STORAGE_KEY = "booklyflow-appointment-edits";
+const DELETED_APPOINTMENTS_STORAGE_KEY = "booklyflow-deleted-appointments";
 
 const mockAppointmentIds = new Set(mockAppointments.map((item) => item.id));
 
@@ -121,16 +122,54 @@ function saveAppointmentEdits(edits: Record<string, Appointment>): void {
   }
 }
 
-/** Combines mock seed data, user-created storage, and mock status overrides. */
+function getDeletedAppointmentIds(): Set<string> {
+  if (typeof window === "undefined") {
+    return new Set();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DELETED_APPOINTMENTS_STORAGE_KEY);
+    if (!raw) return new Set();
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+
+    return new Set(
+      parsed.filter((value): value is string => typeof value === "string")
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeletedAppointmentIds(ids: Set<string>): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      DELETED_APPOINTMENTS_STORAGE_KEY,
+      JSON.stringify(Array.from(ids))
+    );
+  } catch {
+    // Ignore quota or privacy-mode errors.
+  }
+}
 export function mergeAppointments(
   baseAppointments: Appointment[],
   storedAppointments: Appointment[],
   statusOverrides: Record<string, AppointmentStatus> = {},
-  appointmentEdits: Record<string, Appointment> = {}
+  appointmentEdits: Record<string, Appointment> = {},
+  deletedAppointmentIds: Set<string> = new Set()
 ): Appointment[] {
   const byId = new Map<string, Appointment>();
 
   for (const appointment of baseAppointments) {
+    if (deletedAppointmentIds.has(appointment.id)) {
+      continue;
+    }
+
     const override = statusOverrides[appointment.id];
     const edited = appointmentEdits[appointment.id];
     let merged = override ? { ...appointment, status: override } : appointment;
@@ -141,6 +180,9 @@ export function mergeAppointments(
   }
 
   for (const appointment of storedAppointments) {
+    if (deletedAppointmentIds.has(appointment.id)) {
+      continue;
+    }
     byId.set(appointment.id, appointment);
   }
 
@@ -197,6 +239,7 @@ export function clearStoredAppointments(): void {
     window.localStorage.removeItem(APPOINTMENTS_STORAGE_KEY);
     window.localStorage.removeItem(STATUS_OVERRIDES_STORAGE_KEY);
     window.localStorage.removeItem(APPOINTMENT_EDITS_STORAGE_KEY);
+    window.localStorage.removeItem(DELETED_APPOINTMENTS_STORAGE_KEY);
   } catch {
     // Ignore storage errors.
   }
@@ -262,11 +305,35 @@ export function updateStoredAppointment(appointment: Appointment): Appointment[]
   return stored;
 }
 
+export function deleteStoredAppointment(appointmentId: string): Appointment[] {
+  const deletedIds = getDeletedAppointmentIds();
+  deletedIds.add(appointmentId);
+  saveDeletedAppointmentIds(deletedIds);
+
+  const stored = getStoredAppointments().filter(
+    (appointment) => appointment.id !== appointmentId
+  );
+  saveStoredAppointments(stored);
+
+  if (mockAppointmentIds.has(appointmentId)) {
+    const overrides = getStatusOverrides();
+    delete overrides[appointmentId];
+    saveStatusOverrides(overrides);
+
+    const edits = getAppointmentEdits();
+    delete edits[appointmentId];
+    saveAppointmentEdits(edits);
+  }
+
+  return getMergedAppointments();
+}
+
 export function getMergedAppointments(): Appointment[] {
   return mergeAppointments(
     mockAppointments,
     getStoredAppointments(),
     getStatusOverrides(),
-    getAppointmentEdits()
+    getAppointmentEdits(),
+    getDeletedAppointmentIds()
   );
 }

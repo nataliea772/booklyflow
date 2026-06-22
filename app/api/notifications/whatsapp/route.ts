@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   buildAppointmentWhatsAppMessage,
+  isWhatsAppConfigured,
   sendWhatsAppMessage,
   type WhatsAppEventType,
 } from "@/lib/server/whatsapp";
@@ -98,6 +99,9 @@ export async function POST(request: Request) {
   if (!isSupabaseConfigured() || !auth.supabase) {
     return NextResponse.json({
       success: false,
+      errorCode: "missing_credentials",
+      reason: "missing_credentials",
+      message: "WhatsApp automatic provider is not configured",
       error: "WhatsApp notifications require Supabase configuration.",
     });
   }
@@ -150,6 +154,24 @@ export async function POST(request: Request) {
     reviewLink
   );
 
+  if (!isWhatsAppConfigured()) {
+    await recordAppointmentNotification(auth.supabase, {
+      appointmentId,
+      eventType,
+      status: "failed",
+      error: "WhatsApp provider is not configured.",
+    });
+
+    return NextResponse.json({
+      success: false,
+      errorCode: "missing_credentials",
+      reason: "missing_credentials",
+      message: "WhatsApp automatic provider is not configured",
+      error: "WhatsApp provider is not configured.",
+      eventType,
+    });
+  }
+
   const whatsAppResult = await sendWhatsAppMessage(
     appointment.customerPhone,
     message
@@ -174,6 +196,12 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     success: false,
+    errorCode: whatsAppResult.reason ?? "provider_error",
+    reason: whatsAppResult.reason ?? "provider_error",
+    message:
+      whatsAppResult.reason === "missing_credentials"
+        ? "WhatsApp automatic provider is not configured"
+        : "Failed to send WhatsApp.",
     error: whatsAppResult.error ?? "Failed to send WhatsApp.",
     eventType,
   });

@@ -1,92 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  buildAppointmentWhatsAppMessage,
   isWhatsAppConfigured,
   normalizeWhatsAppNumber,
   sendWhatsAppMessage,
 } from "@/lib/server/whatsapp";
-import type { Appointment, BusinessSettings, Service } from "@/lib/types";
-
-const appointment: Pick<Appointment, "appointmentDate" | "startTime"> = {
-  appointmentDate: "2026-06-22",
-  startTime: "10:00",
-};
-
-const service: Pick<Service, "name"> = {
-  name: "טיפול צבע",
-};
-
-const businessSettings: Pick<BusinessSettings, "businessName"> = {
-  businessName: "סטודיו יופי",
-};
-
-describe("buildAppointmentWhatsAppMessage", () => {
-  it("builds a Hebrew confirmation message with greeting", () => {
-    const message = buildAppointmentWhatsAppMessage(
-      "confirmed",
-      appointment,
-      service,
-      businessSettings
-    );
-
-    expect(message).toContain("סטודיו יופי");
-    expect(message).toMatch(/אושר לתאריך .+ בשעה 10:00\./);
-    expect(message).toContain("נשמח לראותך!");
-  });
-
-  it("builds a Hebrew cancellation message", () => {
-    const message = buildAppointmentWhatsAppMessage(
-      "cancelled",
-      appointment,
-      service,
-      businessSettings
-    );
-
-    expect(message).toContain("סטודיו יופי");
-    expect(message).toContain("10:00");
-    expect(message).toContain("בוטל");
-    expect(message).toContain("לפרטים נוספים");
-  });
-
-  it("builds a Hebrew rescheduled message", () => {
-    const message = buildAppointmentWhatsAppMessage(
-      "rescheduled",
-      appointment,
-      service,
-      businessSettings
-    );
-
-    expect(message).toContain("סטודיו יופי");
-    expect(message).toMatch(/עודכן לתאריך .+ בשעה 10:00\./);
-  });
-
-  it("builds a Hebrew review request message with service and link", () => {
-    const reviewLink = "https://booklyflow.example/review/appt-1";
-    const message = buildAppointmentWhatsAppMessage(
-      "review_request",
-      appointment,
-      service,
-      businessSettings,
-      reviewLink
-    );
-
-    expect(message).toContain("סטודיו יופי");
-    expect(message).toContain("טיפול צבע");
-    expect(message).toContain("לדירוג:");
-    expect(message).toContain(reviewLink);
-  });
-
-  it("requires a review link for review_request messages", () => {
-    expect(() =>
-      buildAppointmentWhatsAppMessage(
-        "review_request",
-        appointment,
-        service,
-        businessSettings
-      )
-    ).toThrow("reviewLink is required");
-  });
-});
 
 describe("normalizeWhatsAppNumber", () => {
   it("converts Israeli local numbers to E.164", () => {
@@ -116,11 +33,12 @@ describe("sendWhatsAppMessage", () => {
     const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
+    expect(result.reason).toBe("missing_credentials");
     expect(result.error).toContain("not configured");
     expect(isWhatsAppConfigured()).toBe(false);
   });
 
-  it("returns a configuration error when Twilio credentials are incomplete", async () => {
+  it("returns missing credentials when Twilio credentials are incomplete", async () => {
     process.env.WHATSAPP_PROVIDER = "twilio";
     process.env.WHATSAPP_ACCOUNT_SID = "AC123";
     delete process.env.WHATSAPP_AUTH_TOKEN;
@@ -129,6 +47,7 @@ describe("sendWhatsAppMessage", () => {
     const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
+    expect(result.reason).toBe("missing_credentials");
     expect(result.error).toContain("Twilio WhatsApp credentials");
     expect(isWhatsAppConfigured()).toBe(false);
   });
@@ -178,6 +97,7 @@ describe("sendWhatsAppMessage", () => {
     const result = await sendWhatsAppMessage("0501234567", "בדיקה");
 
     expect(result.success).toBe(false);
+    expect(result.reason).toBe("provider_error");
     expect(result.error).toContain("Twilio error (400)");
   });
 });

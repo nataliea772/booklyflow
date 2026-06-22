@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { appointments as fallbackAppointments } from "@/lib/mock-data";
 import {
   createAppointment as createSupabaseAppointment,
+  deleteAppointment as deleteSupabaseAppointment,
+  DeleteAppointmentError,
   getAppointments as getSupabaseAppointments,
   updateAppointment as updateSupabaseAppointment,
   type UpdateAppointmentInput,
@@ -11,11 +13,16 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   addStoredAppointment,
+  deleteStoredAppointment,
   getMergedAppointments,
   updateStoredAppointment,
   updateStoredAppointmentStatus,
 } from "@/lib/storage";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
+
+export type DeleteAppointmentResult =
+  | { ok: true }
+  | { ok: false; code: "foreign_key" | "not_found" | "unknown" };
 
 function loadFallbackAppointments(): Appointment[] {
   return getMergedAppointments();
@@ -208,11 +215,37 @@ export function useAppointments() {
     [usesDatabase, refreshAppointments]
   );
 
+  const deleteAppointment = useCallback(
+    async (appointmentId: string): Promise<DeleteAppointmentResult> => {
+      if (usesDatabase) {
+        try {
+          await deleteSupabaseAppointment(appointmentId);
+          setAppointments((current) =>
+            current.filter((appointment) => appointment.id !== appointmentId)
+          );
+          return { ok: true };
+        } catch (error) {
+          if (error instanceof DeleteAppointmentError) {
+            return { ok: false, code: error.code };
+          }
+
+          return { ok: false, code: "unknown" };
+        }
+      }
+
+      deleteStoredAppointment(appointmentId);
+      setAppointments(loadFallbackAppointments());
+      return { ok: true };
+    },
+    [usesDatabase]
+  );
+
   return {
     appointments,
     addAppointment,
     updateAppointment,
     updateAppointmentStatus,
+    deleteAppointment,
     refreshAppointments,
     isReady,
     usesDatabase,
