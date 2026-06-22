@@ -42,14 +42,12 @@ export function minutesToTime(minutes: number): string {
   return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
-/** Human-readable label for UI display (e.g. "1:00 PM"). */
+/** Human-readable label for UI display (24-hour format). */
 export function formatTimeLabel(time: string): string {
   const minutes = timeToMinutes(time);
   const hours24 = Math.floor(minutes / 60) % 24;
   const mins = minutes % 60;
-  const period = hours24 >= 12 ? "PM" : "AM";
-  const hours12 = hours24 % 12 || 12;
-  return `${hours12}:${mins.toString().padStart(2, "0")} ${period}`;
+  return `${hours24.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
 export function calculateEndTime(

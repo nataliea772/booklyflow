@@ -7,6 +7,7 @@ export type ServiceRow = {
   price: number | string;
   duration_minutes: number;
   is_active: boolean;
+  image_url: string | null;
   created_at: string;
 };
 
@@ -36,6 +37,7 @@ export function mapServiceRow(row: ServiceRow): Service {
     price: Number(row.price),
     durationMinutes: row.duration_minutes,
     isActive: row.is_active,
+    imageUrl: row.image_url ?? undefined,
   };
 }
 

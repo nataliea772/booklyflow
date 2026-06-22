@@ -23,20 +23,20 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "btn-gradient text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 active:scale-[0.98] focus-visible:ring-primary",
+    "btn-gradient text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/45 active:scale-[0.98] focus-visible:ring-primary relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
   secondary:
-    "bg-gradient-to-r from-secondary to-[#ec4899] text-white shadow-lg shadow-secondary/25 hover:shadow-xl hover:shadow-secondary/35 active:scale-[0.98] focus-visible:ring-secondary",
+    "bg-gradient-to-l from-secondary to-[#ec4899] text-white shadow-lg shadow-secondary/30 hover:shadow-xl hover:shadow-secondary/40 active:scale-[0.98] focus-visible:ring-secondary",
   outline:
-    "border-2 border-primary/20 bg-white text-primary shadow-sm hover:border-primary/40 hover:bg-primary-light/50 hover:shadow-md active:scale-[0.98] focus-visible:ring-primary",
+    "border-2 border-primary/18 bg-white/90 text-primary shadow-sm backdrop-blur-sm hover:border-primary/35 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-primary",
   ghost:
-    "bg-transparent text-[#111827] hover:bg-primary-light/60 hover:text-primary active:scale-[0.98] focus-visible:ring-primary",
+    "bg-transparent text-[#111827] hover:bg-primary-light/70 hover:text-primary active:scale-[0.98] focus-visible:ring-primary",
 };
 
 const sizeStyles = {
   sm: "rounded-xl px-5 py-2.5 text-xs",
   md: "rounded-2xl px-7 py-3.5 text-sm",
-  lg: "rounded-2xl px-8 py-4 text-base",
-  xl: "rounded-2xl px-10 py-4 text-base font-bold",
+  lg: "rounded-2xl px-8 py-4 text-base font-bold",
+  xl: "rounded-2xl px-10 py-4 text-base font-extrabold sm:px-12 sm:py-5 sm:text-lg",
 };
 
 export default function Button({

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "@/components/Navbar";
+import SiteChrome from "@/components/SiteChrome";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,9 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BooklyFlow — Smart Appointment Automation",
-  description:
-    "A smart appointment automation platform for small businesses. Book, manage, and grow with ease.",
+  title: "הזמנת תור",
+  description: "הזמינו תור אונליין — בחירת שירות, מועד ושליחת בקשה בקלות.",
 };
 
 export default function RootLayout({
@@ -26,12 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="he"
+      dir="rtl"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col text-foreground">
-        <Navbar />
-        <main className="flex-1">{children}</main>
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );

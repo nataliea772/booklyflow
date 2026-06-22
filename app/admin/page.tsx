@@ -5,19 +5,26 @@ import { useMemo } from "react";
 import AdminNav from "@/components/AdminNav";
 import Badge from "@/components/Badge";
 import Card from "@/components/Card";
+import EmptyState from "@/components/EmptyState";
 import StatCard from "@/components/StatCard";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useServices } from "@/hooks/useServices";
-import { getTodayDateString } from "@/lib/mock-data";
+import { formatTimeLabel, getServiceName } from "@/lib/availability";
+import { getTodayDateString } from "@/lib/dates";
+import {
+  appointmentStatusLabels,
+  formatPrice,
+  formatShortDate,
+} from "@/lib/i18n";
 
 export default function AdminDashboardPage() {
-  const { appointments, resetDemoData } = useAppointments();
+  const { appointments, isReady } = useAppointments();
   const { services } = useServices();
+  const today = getTodayDateString();
 
   function getServicePrice(serviceId: string): number {
     return services.find((service) => service.id === serviceId)?.price ?? 0;
   }
-  const today = getTodayDateString();
 
   const stats = useMemo(() => {
     const todayAppointments = appointments.filter(
@@ -42,7 +49,12 @@ export default function AdminDashboardPage() {
       );
 
     return { todayAppointments, pending, confirmed, revenue };
-  }, [appointments, today]);
+  }, [appointments, today, services]);
+
+  const recentAppointments = useMemo(
+    () => appointments.slice(0, 5),
+    [appointments]
+  );
 
   const todayPending = appointments.filter(
     (appointment) =>
@@ -62,12 +74,13 @@ export default function AdminDashboardPage() {
       ? Math.round((todayConfirmed / todayActive) * 100)
       : 0;
 
-  const todayLabel = new Date(`${today}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  if (!isReady) {
+    return (
+      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
+        <div className="loader-premium" role="status" aria-label="טוען" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -75,89 +88,89 @@ export default function AdminDashboardPage() {
         <div className="page-container relative py-14 sm:py-16 lg:py-20">
           <AdminNav />
           <Badge variant="primary" className="mb-5">
-            Admin panel
+            לוח בקרה
           </Badge>
-          <h1 className="text-4xl font-bold tracking-tight text-[#111827] sm:text-5xl">
-            Dashboard
-          </h1>
-          <p className="mt-4 max-w-2xl text-xl leading-relaxed text-muted">
-            Overview of your business at a glance.
+          <h1 className="display-section">סקירה עסקית</h1>
+          <p className="lead mt-4 max-w-2xl">
+            מעקב אחר תורים, הכנסות ופעילות יומית — במקום אחד.
           </p>
-          <button
-            type="button"
-            onClick={resetDemoData}
-            className="mt-6 text-xs font-medium text-muted underline-offset-2 transition-colors hover:text-primary hover:underline"
-          >
-            Reset demo data
-          </button>
         </div>
       </section>
 
       <div className="page-container py-12 sm:py-16 lg:py-20">
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Today Appointments"
+            label="תורים להיום"
             value={stats.todayAppointments}
             icon="📅"
-            trend="Scheduled for today"
+            trend="מתוזמנים להיום"
             variant="primary"
             testId="dashboard-stat-today"
           />
           <StatCard
-            label="Pending"
+            label="ממתינים לאישור"
             value={stats.pending}
             icon="⏳"
-            trend="Awaiting confirmation"
+            trend="דורשים טיפול"
             variant="amber"
             testId="dashboard-stat-pending"
           />
           <StatCard
-            label="Confirmed"
+            label="תורים מאושרים"
             value={stats.confirmed}
             icon="✅"
-            trend="All confirmed bookings"
+            trend="כל ההזמנות המאושרות"
             variant="emerald"
             testId="dashboard-stat-confirmed"
           />
           <StatCard
-            label="Revenue"
-            value={`$${stats.revenue.toLocaleString()}`}
+            label="הכנסות משוערות"
+            value={formatPrice(stats.revenue)}
             icon="💰"
-            trend="From confirmed appointments"
+            trend="מתורים מאושרים"
             variant="secondary"
             testId="dashboard-stat-revenue"
           />
         </div>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          <Card elevated accent="primary" padding="lg">
-            <h2 className="text-xl font-bold text-[#111827]">Quick Actions</h2>
-            <p className="mt-2 text-base text-muted">Jump to common tasks</p>
+        <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:gap-8">
+          <Card glass accent="primary" padding="lg">
+            <p className="section-eyebrow">קיצורי דרך</p>
+            <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
+              פעולות מהירות
+            </h2>
+            <p className="mt-2 text-base text-muted">מעבר למשימות נפוצות</p>
             <ul className="mt-8 space-y-3">
               {[
                 {
+                  href: "/admin/business",
+                  icon: "🏢",
+                  label: "פרטי העסק",
+                  desc: "לוגו, כיסוי ופרטי קשר",
+                },
+                {
                   href: "/admin/appointments",
                   icon: "📋",
-                  label: "View all appointments",
-                  desc: "Manage your schedule",
+                  label: "ניהול תורים",
+                  desc: "צפייה ואישור הזמנות",
                 },
                 {
                   href: "/admin/services",
                   icon: "✨",
-                  label: "Manage services",
-                  desc: "Update pricing & duration",
+                  label: "ניהול שירותים",
+                  desc: "הוספה ועריכת שירותים",
                 },
                 {
                   href: "/book",
                   icon: "🔗",
-                  label: "Preview booking page",
-                  desc: "See the client experience",
+                  label: "דף הזמנה ללקוחות",
+                  desc: "תצוגת חוויית ההזמנה",
                 },
               ].map((action) => (
                 <li key={action.href}>
                   <Link
                     href={action.href}
-                    className="group flex items-center gap-4 rounded-2xl border border-transparent bg-gradient-to-r from-primary-soft/50 to-white p-5 transition-all duration-200 hover:border-primary/15 hover:shadow-md"
+                    className="group flex items-center gap-4 rounded-2xl border border-primary/8 bg-white/70 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[var(--card-shadow)]"
                   >
                     <span
                       className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-primary/10 transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20"
@@ -172,7 +185,7 @@ export default function AdminDashboardPage() {
                       <p className="mt-0.5 text-sm text-muted">{action.desc}</p>
                     </div>
                     <span className="text-xl text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                      →
+                      ←
                     </span>
                   </Link>
                 </li>
@@ -180,42 +193,62 @@ export default function AdminDashboardPage() {
             </ul>
           </Card>
 
-          <Card elevated accent="secondary" padding="lg">
-            <div className="flex items-start justify-between gap-4">
+          <Card glass accent="secondary" padding="lg">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-[#111827]">
-                  Today&apos;s Summary
+                <p className="section-eyebrow">פעילות</p>
+                <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
+                  תורים אחרונים
                 </h2>
-                <p className="mt-2 text-base text-muted">{todayLabel}</p>
+                <p className="mt-2 text-base text-muted">
+                  {recentAppointments.length > 0
+                    ? "הפעילות האחרונה בעסק"
+                    : "טרם התקבלו תורים"}
+                </p>
               </div>
-              <Badge variant="secondary">{confirmRate}% confirmed</Badge>
+              {recentAppointments.length > 0 && (
+                <Badge variant="secondary">{confirmRate}% מאושרים היום</Badge>
+              )}
             </div>
-            <p className="mt-8 text-base leading-relaxed text-muted">
-              You have{" "}
-              <span className="font-bold text-primary">
-                {stats.todayAppointments} appointments
-              </span>{" "}
-              scheduled for today with{" "}
-              <span className="font-bold text-amber-600">
-                {todayPending} pending
-              </span>{" "}
-              confirmation.
-            </p>
-            <div className="mt-8 rounded-2xl bg-primary-soft/60 p-6">
-              <div className="mb-3 flex justify-between text-sm font-semibold text-[#111827]">
-                <span>Confirmation rate</span>
-                <span className="text-primary">{confirmRate}%</span>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-white shadow-inner">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-700"
-                  style={{ width: `${confirmRate}%` }}
+
+            {recentAppointments.length === 0 ? (
+              <div className="mt-8">
+                <EmptyState
+                  compact
+                  icon="📅"
+                  title="אין תורים להצגה כרגע"
+                  description="כשלקוחות יזמינו תורים, הם יופיעו כאן."
+                  action={{ label: "לדף ההזמנה", href: "/book" }}
                 />
               </div>
-              <p className="mt-3 text-sm text-muted">
-                {todayConfirmed} confirmed of {todayActive} active today
-              </p>
-            </div>
+            ) : (
+              <ul className="mt-8 space-y-3">
+                {recentAppointments.map((appointment) => (
+                  <li
+                    key={appointment.id}
+                    className="list-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-bold text-[#111827]">
+                        {appointment.customerName}
+                      </p>
+                      <p className="text-sm text-primary">
+                        {getServiceName(services, appointment.serviceId)}
+                      </p>
+                    </div>
+                    <div className="text-sm text-muted">
+                      <p>{formatShortDate(appointment.appointmentDate)}</p>
+                      <p className="ltr-value">
+                        {formatTimeLabel(appointment.startTime)}
+                      </p>
+                      <p className="mt-1 font-semibold text-[#111827]">
+                        {appointmentStatusLabels[appointment.status]}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
       </div>

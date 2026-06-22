@@ -1,62 +1,51 @@
 import type {
   Appointment,
   AppointmentStatus,
-  BusinessSettings,
   Service,
 } from "./types";
+import { getTodayDateString } from "./dates";
 
-export type { Appointment, AppointmentStatus, BusinessSettings, Service };
+export type { Appointment, AppointmentStatus, Service };
 
-/** YYYY-MM-DD for mock appointments tied to "today". */
-export function getTodayDateString(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-export const businessSettings: BusinessSettings = {
-  businessName: "BooklyFlow Studio",
-  startHour: "09:00",
-  endHour: "18:00",
-  bufferMinutes: 15,
-  workingDays: [0, 1, 2, 3, 4],
-};
+export { getTodayDateString };
 
 export const services: Service[] = [
   {
     id: "1",
-    name: "Haircut & Style",
-    description: "Professional cut with blow-dry styling",
+    name: "תספורת ועיצוב",
+    description: "תספורת מקצועית עם ייבוש ועיצוב",
     price: 55,
     durationMinutes: 45,
     isActive: true,
   },
   {
     id: "2",
-    name: "Color Treatment",
-    description: "Full color application with conditioning",
+    name: "טיפול צבע",
+    description: "צביעה מלאה עם טיפול לשיער",
     price: 120,
     durationMinutes: 90,
     isActive: true,
   },
   {
     id: "3",
-    name: "Manicure",
-    description: "Classic manicure with polish of your choice",
+    name: "מניקור",
+    description: "מניקור קלאסי עם לק לבחירתך",
     price: 35,
     durationMinutes: 30,
     isActive: true,
   },
   {
     id: "4",
-    name: "Deep Tissue Massage",
-    description: "60-minute therapeutic massage session",
+    name: "עיסוי רקמות עמוק",
+    description: "עיסוי טיפולי של 60 דקות",
     price: 85,
     durationMinutes: 60,
     isActive: true,
   },
   {
     id: "5",
-    name: "Consultation",
-    description: "Initial consultation for new clients",
+    name: "פגישת היכרות",
+    description: "פגישת ייעוץ ראשונה ללקוחות חדשים",
     price: 0,
     durationMinutes: 20,
     isActive: true,
@@ -69,8 +58,8 @@ export const appointments: Appointment[] = [
   {
     id: "1",
     serviceId: "1",
-    customerName: "Sarah Johnson",
-    customerPhone: "(555) 123-4567",
+    customerName: "שרה כהן",
+    customerPhone: "050-123-4567",
     appointmentDate: today,
     startTime: "10:00",
     endTime: "11:00",
@@ -80,8 +69,8 @@ export const appointments: Appointment[] = [
   {
     id: "2",
     serviceId: "2",
-    customerName: "Emily Davis",
-    customerPhone: "(555) 345-6789",
+    customerName: "מיכל לוי",
+    customerPhone: "050-345-6789",
     appointmentDate: today,
     startTime: "13:00",
     endTime: "14:30",
@@ -91,20 +80,20 @@ export const appointments: Appointment[] = [
   {
     id: "3",
     serviceId: "4",
-    customerName: "David Brown",
-    customerPhone: "(555) 678-9012",
+    customerName: "דוד בר",
+    customerPhone: "050-678-9012",
     appointmentDate: today,
     startTime: "16:00",
     endTime: "17:00",
     status: "cancelled",
-    notes: "Rescheduled for next week",
+    notes: "נדחה לשבוע הבא",
     createdAt: `${today}T07:00:00.000Z`,
   },
   {
     id: "4",
     serviceId: "3",
-    customerName: "James Wilson",
-    customerPhone: "(555) 456-7890",
+    customerName: "יוסי אברהם",
+    customerPhone: "050-456-7890",
     appointmentDate: "2026-06-23",
     startTime: "11:00",
     endTime: "11:30",
@@ -114,8 +103,8 @@ export const appointments: Appointment[] = [
   {
     id: "5",
     serviceId: "5",
-    customerName: "Lisa Martinez",
-    customerPhone: "(555) 567-8901",
+    customerName: "ליזה מרטינז",
+    customerPhone: "050-567-8901",
     appointmentDate: "2026-06-23",
     startTime: "15:30",
     endTime: "15:50",
@@ -131,38 +120,39 @@ export const dashboardStats = {
   revenue: 1240,
 };
 
+/** @deprecated Use lib/marketing.ts for production UI content */
 export const features = [
   {
-    title: "Easy Online Booking",
+    title: "הזמנת תור בקלות",
     description:
-      "Let clients book appointments 24/7 — perfect for salons, clinics, and studios with busy schedules.",
+      "לקוחות יכולים להזמין תורים 24/7 — מושלם לסטודיואים, קליניקות ועסקים עם לוח זמנים עמוס.",
     icon: "📅",
   },
   {
-    title: "Smart Reminders",
+    title: "תזכורות חכמות",
     description:
-      "Automated reminders reduce no-shows so your chairs, rooms, and time slots stay filled.",
+      "תזכורות אוטומטיות מפחיתות אי-הגעות ושומרות על לוח הזמנים מלא.",
     icon: "🔔",
   },
   {
-    title: "Business Dashboard",
+    title: "לוח בקרה עסקי",
     description:
-      "See today’s appointments, revenue, and pending bookings at a glance — no spreadsheets needed.",
+      "צפייה בתורים של היום, הכנסות ותורים ממתינים במבט אחד — בלי גיליונות אלקטרוניים.",
     icon: "📊",
   },
   {
-    title: "Service Management",
+    title: "ניהול שירותים",
     description:
-      "Set prices, durations, and descriptions for every service you offer in just a few clicks.",
+      "הגדרת מחירים, משך זמן ותיאורים לכל שירות בכמה לחיצות.",
     icon: "✨",
   },
 ];
 
 export const businessTypes = [
-  { label: "Beauty Studios", icon: "💅" },
-  { label: "Clinics", icon: "🏥" },
-  { label: "Personal Trainers", icon: "💪" },
-  { label: "Private Teachers", icon: "📚" },
-  { label: "Wellness Spas", icon: "🧘" },
-  { label: "Consultants", icon: "💼" },
+  { label: "סטודיואים ליופי", icon: "💅" },
+  { label: "קליניקות", icon: "🏥" },
+  { label: "מאמנים אישיים", icon: "💪" },
+  { label: "מורים פרטיים", icon: "📚" },
+  { label: "ספא ובריאות", icon: "🧘" },
+  { label: "יועצים", icon: "💼" },
 ];

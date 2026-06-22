@@ -1,36 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { services as mockServices } from "@/lib/mock-data";
-import { getServices } from "@/lib/supabase/services";
+import { services as fallbackServices } from "@/lib/mock-data";
+import {
+  createService,
+  getServices,
+  updateServiceImageUrl,
+} from "@/lib/supabase/services";
+import { uploadServiceImage } from "@/lib/supabase/storage";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Service } from "@/lib/types";
 
 export function useServices() {
-  const [services, setServices] = useState<Service[]>(mockServices);
+  const usesDatabase = isSupabaseConfigured();
+  const [services, setServices] = useState<Service[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   const refreshServices = useCallback(async () => {
-    if (!isSupabaseConfigured()) {
-      setServices(mockServices);
+    if (!usesDatabase) {
+      setServices(fallbackServices);
       return;
     }
 
-    const remoteServices = await getServices();
-    if (remoteServices.length > 0) {
-      setServices(remoteServices);
-    } else {
-      setServices(mockServices);
-    }
-  }, []);
+    setServices(await getServices());
+  }, [usesDatabase]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadServices() {
-      if (!isSupabaseConfigured()) {
+      if (!usesDatabase) {
         if (!cancelled) {
-          setServices(mockServices);
+          setServices(fallbackServices);
           setIsReady(true);
         }
         return;
@@ -38,7 +39,7 @@ export function useServices() {
 
       const remoteServices = await getServices();
       if (!cancelled) {
-        setServices(remoteServices.length > 0 ? remoteServices : mockServices);
+        setServices(remoteServices);
         setIsReady(true);
       }
     }
@@ -48,7 +49,64 @@ export function useServices() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [usesDatabase]);
 
-  return { services, isReady, refreshServices };
+  const addService = useCallback(
+    async (input: {
+      name: string;
+      description: string;
+      price: number;
+      durationMinutes: number;
+      imageFile?: File | null;
+    }) => {
+      if (!usesDatabase) {
+        const localService: Service = {
+          id: String(Date.now()),
+          name: input.name,
+          description: input.description,
+          price: input.price,
+          durationMinutes: input.durationMinutes,
+          isActive: true,
+        };
+        setServices((current) => [...current, localService]);
+        return localService;
+      }
+
+      const created = await createService(input);
+      if (!created) {
+        await refreshServices();
+        return null;
+      }
+
+      if (input.imageFile) {
+        try {
+          const imageUrl = await uploadServiceImage(
+            input.imageFile,
+            created.id
+          );
+          const updated = await updateServiceImageUrl(created.id, imageUrl);
+          if (updated) {
+            setServices((current) => [...current, updated]);
+            return updated;
+          }
+        } catch (error) {
+          console.error("Failed to upload service image:", error);
+          setServices((current) => [...current, created]);
+          return created;
+        }
+      }
+
+      setServices((current) => [...current, created]);
+      return created;
+    },
+    [usesDatabase, refreshServices]
+  );
+
+  return {
+    services,
+    isReady,
+    usesDatabase,
+    refreshServices,
+    addService,
+  };
 }

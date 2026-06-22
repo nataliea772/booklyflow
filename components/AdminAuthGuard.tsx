@@ -26,12 +26,8 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
     return (
       <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
         <div className="text-center">
-          <div
-            className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
-            role="status"
-            aria-label="Loading"
-          />
-          <p className="mt-4 text-muted">Checking authentication…</p>
+          <div className="loader-premium mx-auto" role="status" aria-label="טוען" />
+          <p className="mt-4 text-muted">בודקים התחברות…</p>
         </div>
       </div>
     );

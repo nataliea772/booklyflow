@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { appointments as mockAppointments } from "@/lib/mock-data";
+import { appointments as fallbackAppointments } from "@/lib/mock-data";
 import {
   createAppointment as createSupabaseAppointment,
   getAppointments as getSupabaseAppointments,
@@ -10,7 +10,6 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   addStoredAppointment,
-  clearStoredAppointments,
   getStatusOverrides,
   getStoredAppointments,
   mergeAppointments,
@@ -18,39 +17,39 @@ import {
 } from "@/lib/storage";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 
-function loadDemoAppointments(): Appointment[] {
+function loadFallbackAppointments(): Appointment[] {
   return mergeAppointments(
-    mockAppointments,
+    fallbackAppointments,
     getStoredAppointments(),
     getStatusOverrides()
   );
 }
 
 function getInitialAppointments(): Appointment[] {
-  return isSupabaseConfigured() ? [] : mockAppointments;
+  return isSupabaseConfigured() ? [] : loadFallbackAppointments();
 }
 
 export function useAppointments() {
+  const usesDatabase = isSupabaseConfigured();
   const [appointments, setAppointments] = useState<Appointment[]>(
     getInitialAppointments
   );
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(!usesDatabase);
 
   const refreshAppointments = useCallback(async () => {
-    if (isSupabaseConfigured()) {
-      const remoteAppointments = await getSupabaseAppointments();
-      setAppointments(remoteAppointments);
+    if (usesDatabase) {
+      setAppointments(await getSupabaseAppointments());
       return;
     }
 
-    setAppointments(loadDemoAppointments());
-  }, []);
+    setAppointments(loadFallbackAppointments());
+  }, [usesDatabase]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadAppointments() {
-      if (isSupabaseConfigured()) {
+      if (usesDatabase) {
         const remoteAppointments = await getSupabaseAppointments();
         if (!cancelled) {
           setAppointments(remoteAppointments);
@@ -60,7 +59,7 @@ export function useAppointments() {
       }
 
       if (!cancelled) {
-        setAppointments(loadDemoAppointments());
+        setAppointments(loadFallbackAppointments());
         setIsReady(true);
       }
     }
@@ -70,11 +69,11 @@ export function useAppointments() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [usesDatabase]);
 
   const addAppointment = useCallback(
     async (appointment: Appointment) => {
-      if (isSupabaseConfigured()) {
+      if (usesDatabase) {
         const created = await createSupabaseAppointment({
           serviceId: appointment.serviceId,
           customerName: appointment.customerName,
@@ -100,14 +99,14 @@ export function useAppointments() {
       }
 
       addStoredAppointment(appointment);
-      setAppointments(loadDemoAppointments());
+      setAppointments(loadFallbackAppointments());
     },
-    [refreshAppointments]
+    [usesDatabase, refreshAppointments]
   );
 
   const updateAppointmentStatus = useCallback(
     async (appointmentId: string, status: AppointmentStatus) => {
-      if (isSupabaseConfigured()) {
+      if (usesDatabase) {
         const updated = await updateSupabaseAppointmentStatus(
           appointmentId,
           status
@@ -126,27 +125,17 @@ export function useAppointments() {
       }
 
       updateStoredAppointmentStatus(appointmentId, status);
-      setAppointments(loadDemoAppointments());
+      setAppointments(loadFallbackAppointments());
     },
-    [refreshAppointments]
+    [usesDatabase, refreshAppointments]
   );
-
-  const resetDemoData = useCallback(async () => {
-    if (isSupabaseConfigured()) {
-      await refreshAppointments();
-      return;
-    }
-
-    clearStoredAppointments();
-    setAppointments(mockAppointments);
-  }, [refreshAppointments]);
 
   return {
     appointments,
     addAppointment,
     updateAppointmentStatus,
     refreshAppointments,
-    resetDemoData,
     isReady,
+    usesDatabase,
   };
 }

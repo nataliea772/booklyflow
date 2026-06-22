@@ -5,6 +5,7 @@ export type Service = {
   price: number;
   durationMinutes: number;
   isActive: boolean;
+  imageUrl?: string;
 };
 
 export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
@@ -24,11 +25,19 @@ export type Appointment = {
 };
 
 export type BusinessSettings = {
+  id?: string;
   businessName: string;
   startHour: string;
   endHour: string;
   bufferMinutes: number;
   workingDays: number[];
+  description?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  primaryColor?: string;
 };
 
 export type TimeSlot = {

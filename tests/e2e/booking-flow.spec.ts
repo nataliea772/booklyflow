@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { appointmentStatusLabels } from "../../lib/i18n";
 import {
   getAdminAuthSkipReason,
   loginAsAdminIfRequired,
@@ -67,7 +68,10 @@ test.describe("BooklyFlow booking flow", () => {
 
     await page.goto("/admin");
     const pendingBefore = Number(
-      await page.getByTestId("dashboard-stat-pending").locator("p.text-4xl").innerText()
+      await page
+        .getByTestId("dashboard-stat-pending")
+        .locator("p.text-4xl")
+        .innerText()
     );
     const confirmedBefore = Number(
       await page.getByTestId("dashboard-stat-confirmed").locator("p.text-4xl").innerText()
@@ -92,7 +96,7 @@ test.describe("BooklyFlow booking flow", () => {
     await page.getByTestId("submit-booking-button").click();
     await expect(page.getByTestId("booking-success-message")).toBeVisible();
     await expect(page.getByTestId("booking-success-message")).toContainText(
-      "Booking Request Received"
+      "בקשת ההזמנה התקבלה"
     );
 
     await page.goto("/admin/appointments");
@@ -109,13 +113,13 @@ test.describe("BooklyFlow booking flow", () => {
 
     await expect(
       page.getByTestId(`status-badge-${appointmentId}`)
-    ).toContainText("Pending");
+    ).toContainText(appointmentStatusLabels.pending);
 
     await page.getByTestId(`confirm-appointment-${appointmentId}`).click();
 
     await expect(
       page.getByTestId(`status-badge-${appointmentId}`)
-    ).toContainText("Confirmed");
+    ).toContainText(appointmentStatusLabels.confirmed);
 
     await page.goto("/admin");
     await expect(page.getByTestId("dashboard-stat-today")).toBeVisible();
@@ -159,7 +163,7 @@ test.describe("BooklyFlow booking flow", () => {
     await page.getByTestId("submit-booking-button").click();
     await expect(page.getByTestId("booking-success-message")).toBeVisible();
 
-    await page.getByRole("button", { name: "Book Another" }).click();
+    await page.getByTestId("book-another-button").click();
 
     await selectServiceAndDate(page, appointmentDate);
 

@@ -1,11 +1,14 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import Badge from "@/components/Badge";
+import BookingSteps from "@/components/BookingSteps";
+import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
-import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import ServiceSelectCards from "@/components/ServiceSelectCards";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { useServices } from "@/hooks/useServices";
 import {
   calculateEndTime,
@@ -14,7 +17,8 @@ import {
   getAvailableSlots,
   isWorkingDay,
 } from "@/lib/availability";
-import { businessSettings } from "@/lib/mock-data";
+import { getPublicBusinessName } from "@/lib/business-config";
+import { formatDisplayDate } from "@/lib/i18n";
 import type { TimeSlot } from "@/lib/types";
 
 type BookedAppointment = {
@@ -27,18 +31,13 @@ type BookedAppointment = {
   notes?: string;
 };
 
-function formatDisplayDate(date: string) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 export default function BookPage() {
-  const { appointments, addAppointment } = useAppointments();
-  const { services } = useServices();
+  const { appointments, addAppointment, isReady: appointmentsReady } =
+    useAppointments();
+  const { services, isReady: servicesReady } = useServices();
+  const { settings: businessSettings, isReady: settingsReady } =
+    useBusinessSettings();
+
   const [serviceId, setServiceId] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
   const [selectedStartTime, setSelectedStartTime] = useState("");
@@ -47,6 +46,12 @@ export default function BookPage() {
   const [notes, setNotes] = useState("");
   const [bookedAppointment, setBookedAppointment] =
     useState<BookedAppointment | null>(null);
+
+  const isReady = servicesReady && settingsReady && appointmentsReady;
+
+  const businessName = getPublicBusinessName(businessSettings);
+  const displaySettings = { ...businessSettings, businessName };
+  const activeServices = services.filter((service) => service.isActive);
 
   const selectedService = useMemo(
     () => findService(services, serviceId),
@@ -62,7 +67,13 @@ export default function BookPage() {
       appointments,
       businessSettings,
     });
-  }, [selectedService, appointmentDate, appointments]);
+  }, [selectedService, appointmentDate, appointments, businessSettings]);
+
+  const currentStep: 1 | 2 | 3 = !serviceId
+    ? 1
+    : !appointmentDate || !selectedStartTime
+      ? 2
+      : 3;
 
   useEffect(() => {
     setSelectedStartTime("");
@@ -121,13 +132,21 @@ export default function BookPage() {
     setNotes("");
   }
 
+  if (!isReady) {
+    return (
+      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
+        <div className="loader-premium" role="status" aria-label="טוען" />
+      </div>
+    );
+  }
+
   if (bookedAppointment) {
     return (
       <div className="page-container py-20 sm:py-28">
         <div className="mx-auto max-w-lg">
-          <Card padding="lg" elevated accent="primary" className="text-center">
+          <div className="surface-premium p-8 text-center sm:p-10">
             <span
-              className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 text-4xl ring-1 ring-emerald-200/60"
+              className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-bl from-emerald-50 to-emerald-100 text-4xl ring-1 ring-emerald-200/60"
               role="img"
               aria-hidden="true"
             >
@@ -137,46 +156,44 @@ export default function BookPage() {
               className="mt-8 text-3xl font-bold text-[#111827]"
               data-testid="booking-success-message"
             >
-              Booking Request Received!
+              בקשת ההזמנה התקבלה!
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-muted">
-              Thank you, {bookedAppointment.customerName}. Your appointment at{" "}
-              {businessSettings.businessName} has been submitted.
+              תודה, {bookedAppointment.customerName}. בקשת התור שלך ב-
+              {businessName} נשלחה בהצלחה.
             </p>
 
-            <div className="mt-8 rounded-2xl border border-primary/10 bg-primary-soft/40 p-6 text-left">
-              <p className="text-sm font-semibold uppercase tracking-wider text-muted">
-                Appointment details
-              </p>
+            <div className="mt-8 rounded-2xl border border-primary/10 bg-primary-soft/40 p-6 text-right">
+              <p className="text-sm font-semibold text-muted">פרטי התור</p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Service</dt>
+                  <dt className="text-muted">שירות</dt>
                   <dd className="font-semibold text-[#111827]">
                     {bookedAppointment.serviceName}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Date</dt>
+                  <dt className="text-muted">תאריך</dt>
                   <dd className="font-semibold text-[#111827]">
                     {formatDisplayDate(bookedAppointment.appointmentDate)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Time</dt>
-                  <dd className="font-semibold text-[#111827]">
+                  <dt className="text-muted">שעה</dt>
+                  <dd className="font-semibold text-[#111827] ltr-value">
                     {formatTimeLabel(bookedAppointment.startTime)} –{" "}
                     {formatTimeLabel(bookedAppointment.endTime)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-muted">Phone</dt>
-                  <dd className="font-semibold text-[#111827]">
+                  <dt className="text-muted">טלפון</dt>
+                  <dd className="font-semibold text-[#111827] ltr-value">
                     {bookedAppointment.customerPhone}
                   </dd>
                 </div>
                 {bookedAppointment.notes && (
                   <div>
-                    <dt className="text-muted">Notes</dt>
+                    <dt className="text-muted">הערות</dt>
                     <dd className="mt-1 font-medium text-[#111827]">
                       {bookedAppointment.notes}
                     </dd>
@@ -187,85 +204,84 @@ export default function BookPage() {
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Button href="/" variant="outline" size="lg">
-                Back to Home
+                חזרה לדף הבית
               </Button>
-              <Button onClick={resetBooking} size="lg">
-                Book Another
+              <Button
+                onClick={resetBooking}
+                size="lg"
+                data-testid="book-another-button"
+              >
+                הזמנת תור נוסף
               </Button>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     );
   }
 
+  if (activeServices.length === 0) {
+    return (
+      <>
+        <BusinessBrandingHeader settings={displaySettings} />
+        <div className="page-container py-12 sm:py-16">
+          <EmptyState
+            icon="✨"
+            title="אין שירותים זמינים כרגע"
+            description="העסק מעדכן כעת את רשימת השירותים. נשמח לראות אתכם שוב בקרוב."
+            action={{ label: "חזרה לדף הראשי", href: "/" }}
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <PageHeader
-        badge="📅 Online booking"
-        title="Book an Appointment"
-        description={`Choose your service at ${businessSettings.businessName}, pick an available time, and we'll take care of the rest.`}
-      >
-        <div className="flex flex-wrap gap-3">
-          {["Free cancellation", "Instant confirmation", "Secure & private"].map(
-            (item) => (
-              <span
-                key={item}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-[#111827] shadow-[var(--card-shadow)] ring-1 ring-primary/10"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-600">
-                  ✓
-                </span>
-                {item}
-              </span>
-            )
-          )}
-        </div>
-      </PageHeader>
+      <BusinessBrandingHeader settings={displaySettings} />
 
       <div className="page-container py-12 sm:py-16 lg:py-20">
-        <div className="mx-auto max-w-2xl">
-          <Card padding="lg" elevated accent="primary">
+        <div className="mx-auto max-w-3xl">
+          <div className="surface-premium hero-glow-ring relative overflow-hidden p-8 sm:p-10">
             <CardHeader
-              title="Appointment Details"
-              description="Select a service and date to see available time slots."
+              title="פרטי ההזמנה"
+              description="מלאו את הפרטים בשלושה צעדים קצרים."
             />
+            <BookingSteps currentStep={currentStep} />
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div>
-                <label
-                  htmlFor="service"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  Service
-                </label>
+            <form onSubmit={handleSubmit} className="space-y-10">
+              <section className="space-y-4">
+                <h2 className="text-lg font-bold text-[#111827]">
+                  1. בחירת שירות
+                </h2>
+                <ServiceSelectCards
+                  services={activeServices}
+                  selectedId={serviceId}
+                  onSelect={setServiceId}
+                />
                 <select
                   id="service"
                   name="service"
                   data-testid="service-select"
                   value={serviceId}
                   onChange={(e) => setServiceId(e.target.value)}
-                  className="input-field"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
                 >
-                  <option value="">Select a service</option>
-                  {services
-                    .filter((service) => service.isActive)
-                    .map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name} — {service.durationMinutes} min — $
-                        {service.price === 0 ? "Free" : service.price}
-                      </option>
-                    ))}
+                  <option value="">בחרו שירות</option>
+                  {activeServices.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
                 </select>
-              </div>
+              </section>
 
-              <div>
-                <label
-                  htmlFor="date"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  Date
-                </label>
+              <section className="space-y-4">
+                <h2 className="text-lg font-bold text-[#111827]">
+                  2. בחירת תאריך ושעה
+                </h2>
                 <input
                   type="date"
                   id="date"
@@ -274,35 +290,28 @@ export default function BookPage() {
                   value={appointmentDate}
                   onChange={(e) => setAppointmentDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  className="input-field"
+                  className="input-field ltr-value"
+                  disabled={!serviceId}
                 />
-                <p className="mt-2 text-sm text-muted">
-                  Open Sunday – Thursday, {businessSettings.startHour} –{" "}
+                <p className="text-sm text-muted">
+                  פתוחים א׳–ה׳, {businessSettings.startHour} –{" "}
                   {businessSettings.endHour}
                 </p>
-              </div>
-
-              <div>
-                <label className="mb-2.5 block text-sm font-bold text-[#111827]">
-                  Available Times
-                </label>
 
                 {!serviceId || !appointmentDate ? (
                   <p className="rounded-2xl border border-dashed border-primary/20 bg-primary-soft/30 px-4 py-6 text-center text-sm text-muted">
-                    Select a service and date to view available slots.
+                    בחרו שירות ותאריך כדי לראות שעות פנויות.
                   </p>
                 ) : isClosedDay ? (
                   <p className="rounded-2xl border border-amber-200/60 bg-amber-50 px-4 py-6 text-center text-sm font-medium text-amber-800">
-                    We&apos;re closed on this day. Please choose a day between
-                    Sunday and Thursday.
+                    אנחנו סגורים ביום זה. אנא בחרו יום בין ראשון לחמישי.
                   </p>
                 ) : availableSlots.length === 0 ? (
                   <p className="rounded-2xl border border-primary/15 bg-primary-soft/40 px-4 py-6 text-center text-sm font-medium text-[#111827]">
-                    No available slots for this service on the selected date.
-                    Try another date or service.
+                    אין שעות פנויות לשירות זה בתאריך שנבחר.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="flex flex-wrap gap-3">
                     {availableSlots.map((slot) => {
                       const isSelected = selectedStartTime === slot.startTime;
                       return (
@@ -311,10 +320,8 @@ export default function BookPage() {
                           type="button"
                           data-testid={`time-slot-${slot.startTime}`}
                           onClick={() => setSelectedStartTime(slot.startTime)}
-                          className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-                            isSelected
-                              ? "border-primary bg-primary text-white shadow-lg shadow-primary/25"
-                              : "border-primary/15 bg-white text-[#111827] hover:border-primary/30 hover:bg-primary-light/50 hover:shadow-md"
+                          className={`pill-slot ltr-value ${
+                            isSelected ? "pill-slot-selected" : ""
                           }`}
                         >
                           {formatTimeLabel(slot.startTime)}
@@ -323,66 +330,70 @@ export default function BookPage() {
                     })}
                   </div>
                 )}
-              </div>
+              </section>
 
-              <div className="grid gap-8 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    data-testid="customer-name-input"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Jane Smith"
-                    className="input-field"
-                  />
+              <section className="space-y-4">
+                <h2 className="text-lg font-bold text-[#111827]">
+                  3. פרטי לקוח
+                </h2>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="mb-2.5 block text-sm font-bold text-[#111827]"
+                    >
+                      שם מלא
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      data-testid="customer-name-input"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="ישראל ישראלי"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="phone"
+                      className="mb-2.5 block text-sm font-bold text-[#111827]"
+                    >
+                      מספר טלפון
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      data-testid="phone-input"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="050-123-4567"
+                      className="input-field ltr-value"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label
-                    htmlFor="phone"
+                    htmlFor="notes"
                     className="mb-2.5 block text-sm font-bold text-[#111827]"
                   >
-                    Phone Number
+                    הערות{" "}
+                    <span className="font-normal text-muted">(אופציונלי)</span>
                   </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    data-testid="phone-input"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="(555) 123-4567"
-                    className="input-field"
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    data-testid="notes-input"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="בקשות מיוחדות..."
+                    className="input-field resize-none"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="notes"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  Notes{" "}
-                  <span className="font-normal text-muted">(optional)</span>
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  data-testid="notes-input"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  placeholder="Any special requests or preferences..."
-                  className="input-field resize-none"
-                />
-              </div>
+              </section>
 
               <div className="border-t border-primary/10 pt-8">
                 <Button
@@ -392,11 +403,11 @@ export default function BookPage() {
                   disabled={!isFormComplete}
                   data-testid="submit-booking-button"
                 >
-                  Request Appointment →
+                  ← שליחת בקשת תור
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       </div>
     </>

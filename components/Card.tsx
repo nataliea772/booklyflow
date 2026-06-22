@@ -6,6 +6,7 @@ type CardProps = {
   padding?: "sm" | "md" | "lg" | "none";
   hover?: boolean;
   elevated?: boolean;
+  glass?: boolean;
   accent?: "primary" | "secondary" | "none";
 };
 
@@ -13,18 +14,19 @@ type CardHeaderProps = {
   title: string;
   description?: string;
   action?: ReactNode;
+  eyebrow?: string;
 };
 
 const paddingStyles = {
   none: "",
   sm: "p-6",
   md: "p-7 sm:p-8",
-  lg: "p-9 sm:p-11",
+  lg: "p-8 sm:p-10 lg:p-11",
 };
 
 const accentStyles = {
-  primary: "before:bg-gradient-to-r before:from-primary before:to-[#9333ea]",
-  secondary: "before:bg-gradient-to-r before:from-secondary before:to-[#ec4899]",
+  primary: "before:bg-gradient-to-l before:from-[#6d28d9] before:to-[#8b5cf6]",
+  secondary: "before:bg-gradient-to-l before:from-secondary before:to-[#ec4899]",
   none: "",
 };
 
@@ -34,15 +36,21 @@ export default function Card({
   padding = "md",
   hover = false,
   elevated = false,
+  glass = false,
   accent = "none",
 }: CardProps) {
   const hasAccent = accent !== "none";
+  const surface = glass
+    ? "glass-card border-white/90 bg-white/75"
+    : "border-primary/10 bg-white/90 backdrop-blur-sm";
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl border border-primary/10 bg-white ${paddingStyles[padding]} ${hover ? "card-hover" : elevated ? "card-elevated" : ""} ${hasAccent ? `before:absolute before:inset-x-0 before:top-0 before:h-1 before:content-[''] ${accentStyles[accent]}` : ""} ${className}`}
+      className={`relative overflow-hidden rounded-[1.75rem] border ${surface} ${paddingStyles[padding]} ${hover ? "card-hover" : elevated ? "card-elevated" : ""} ${hasAccent ? `before:absolute before:inset-x-0 before:top-0 before:h-1 before:content-[''] ${accentStyles[accent]}` : ""} ${className}`}
       style={
-        !hover && !elevated ? { boxShadow: "var(--card-shadow)" } : undefined
+        !hover && !elevated && !glass
+          ? { boxShadow: "var(--card-shadow)" }
+          : undefined
       }
     >
       {children}
@@ -50,11 +58,12 @@ export default function Card({
   );
 }
 
-export function CardHeader({ title, description, action }: CardHeaderProps) {
+export function CardHeader({ title, description, action, eyebrow }: CardHeaderProps) {
   return (
-    <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-[#111827]">
+        {eyebrow && <p className="section-eyebrow mb-2">{eyebrow}</p>}
+        <h2 className="text-xl font-extrabold tracking-tight text-[#111827] sm:text-2xl">
           {title}
         </h2>
         {description && (
@@ -63,7 +72,7 @@ export function CardHeader({ title, description, action }: CardHeaderProps) {
           </p>
         )}
       </div>
-      {action && <div className="mt-4 shrink-0 sm:mt-0">{action}</div>}
+      {action && <div className="mt-2 shrink-0 sm:mt-0">{action}</div>}
     </div>
   );
 }

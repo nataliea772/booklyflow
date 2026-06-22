@@ -10,6 +10,7 @@ create table if not exists services (
   price numeric not null,
   duration_minutes integer not null,
   is_active boolean default true,
+  image_url text,
   created_at timestamptz default now()
 );
 
@@ -34,6 +35,13 @@ create table if not exists business_settings (
   end_hour text not null,
   buffer_minutes integer not null default 15,
   working_days integer[] not null default '{0,1,2,3,4}',
+  description text,
+  phone text,
+  email text,
+  address text,
+  logo_url text,
+  cover_image_url text,
+  primary_color text,
   created_at timestamptz default now()
 );
 
@@ -78,26 +86,47 @@ create policy "Public read blocked_times"
   on blocked_times for select
   using (true);
 
+create policy "Authenticated insert services"
+  on services for insert
+  to authenticated
+  with check (true);
+
+create policy "Authenticated update services"
+  on services for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Authenticated update business_settings"
+  on business_settings for update
+  to authenticated
+  using (true)
+  with check (true);
+
+-- Supabase Storage (run after creating bucket in dashboard or via migration)
+-- Dashboard: Storage → New bucket → name "booklyflow-assets" → Public: ON
+-- Or run lib/supabase/migrations/001_business_branding.sql for full migration.
+
 -- Seed data
 insert into services (name, description, price, duration_minutes, is_active)
 values
   (
-    'Haircut & Style',
-    'Professional cut with blow-dry styling',
+    'תספורת ועיצוב',
+    'תספורת מקצועית עם ייבוש ועיצוב',
     55,
     45,
     true
   ),
   (
-    'Color Treatment',
-    'Full color application with conditioning',
+    'טיפול צבע',
+    'צביעה מלאה עם טיפול לשיער',
     120,
     90,
     true
   ),
   (
-    'Manicure',
-    'Classic manicure with polish of your choice',
+    'מניקור',
+    'מניקור קלאסי עם לק לבחירתך',
     35,
     30,
     true
@@ -111,7 +140,7 @@ insert into business_settings (
   working_days
 )
 values (
-  'BooklyFlow Studio',
+  'סטודיו BooklyFlow',
   '09:00',
   '18:00',
   15,

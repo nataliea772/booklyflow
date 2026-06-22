@@ -1,186 +1,167 @@
+"use client";
+
+import Link from "next/link";
 import Button from "@/components/Button";
-import Badge from "@/components/Badge";
+import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
 import Card from "@/components/Card";
-import StatCard from "@/components/StatCard";
-import { businessTypes, features } from "@/lib/mock-data";
+import EmptyState from "@/components/EmptyState";
+import ServiceImage from "@/components/ServiceImage";
+import { useBusinessSettings } from "@/hooks/useBusinessSettings";
+import { useServices } from "@/hooks/useServices";
+import { getPublicBusinessName } from "@/lib/business-config";
+import { formatPrice } from "@/lib/i18n";
+import { customerBookingSteps } from "@/lib/marketing";
 
 export default function HomePage() {
+  const { settings, isReady: settingsReady } = useBusinessSettings();
+  const { services, isReady: servicesReady } = useServices();
+
+  const isReady = settingsReady && servicesReady;
+  const activeServices = services.filter((service) => service.isActive);
+  const businessName = getPublicBusinessName(settings);
+  const displaySettings = { ...settings, businessName };
+
+  if (!isReady) {
+    return (
+      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
+        <div className="loader-premium" role="status" aria-label="טוען" />
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ede9fe] via-[#f5f3ff] to-white" />
-        <div className="gradient-blob -top-40 right-0 h-[600px] w-[600px] bg-primary/20" />
-        <div className="gradient-blob bottom-0 left-0 h-[500px] w-[500px] bg-secondary/15" />
+      <BusinessBrandingHeader settings={displaySettings} />
 
-        <div className="page-container relative py-20 sm:py-28 lg:py-36">
-          <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-20">
-            {/* Copy */}
-            <div>
-              <Badge variant="primary" className="mb-8">
-                ✦ Trusted by small businesses worldwide
-              </Badge>
-              <h1 className="text-5xl font-bold leading-[1.05] tracking-tight text-[#111827] sm:text-6xl lg:text-7xl">
-                The calm way to manage{" "}
-                <span className="text-gradient">appointments</span>
-              </h1>
-              <p className="mt-8 max-w-xl text-xl leading-relaxed text-muted">
-                BooklyFlow helps clinics, beauty studios, trainers, and private
-                teachers automate bookings, reduce no-shows, and deliver a
-                premium client experience.
-              </p>
-              <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <Button href="/book" size="xl">
-                  Start Booking Free
-                </Button>
-                <Button href="/admin" variant="outline" size="lg">
-                  View Demo Dashboard
-                </Button>
-              </div>
-              <div className="mt-14 flex flex-wrap gap-x-8 gap-y-4 text-sm font-semibold text-[#111827]">
-                <span className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-600">
-                    ✓
-                  </span>
-                  No credit card required
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-600">
-                    ✓
-                  </span>
-                  Setup in minutes
-                </span>
-              </div>
-            </div>
-
-            {/* Dashboard preview */}
-            <div className="relative">
-              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 blur-2xl" />
-              <Card padding="lg" elevated accent="primary" className="relative">
-                <div className="mb-8 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-muted">
-                      Your dashboard
-                    </p>
-                    <p className="mt-1 text-2xl font-bold text-[#111827]">
-                      Good morning 👋
-                    </p>
-                  </div>
-                  <Badge variant="neutral">Live preview</Badge>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <StatCard label="Today" value={8} icon="📅" variant="primary" />
-                  <StatCard label="Pending" value={3} icon="⏳" variant="amber" />
-                  <StatCard label="Confirmed" value={12} icon="✅" variant="emerald" />
-                  <StatCard label="Revenue" value="$1,240" icon="💰" variant="secondary" />
-                </div>
-                <div className="mt-6">
-                  <Button href="/admin" variant="outline" className="w-full">
-                    Open Full Dashboard →
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          </div>
-
-          {/* Business types */}
-          <div className="mt-24 border-t border-primary/10 pt-16">
-            <p className="text-center text-sm font-semibold uppercase tracking-widest text-muted">
-              Perfect for
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              {businessTypes.map((type) => (
-                <span
-                  key={type.label}
-                  className="inline-flex items-center gap-2.5 rounded-2xl bg-white px-6 py-3.5 text-sm font-semibold text-[#111827] shadow-[var(--card-shadow)] ring-1 ring-primary/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-lg)]"
-                >
-                  <span className="text-lg" aria-hidden="true">
-                    {type.icon}
-                  </span>
-                  {type.label}
-                </span>
-              ))}
-            </div>
+      <section className="page-container py-12 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="display-section text-3xl sm:text-4xl">
+            ברוכים הבאים
+          </h2>
+          <p className="lead mx-auto mt-4 max-w-2xl">
+            {settings.description ||
+              `שמחים לראות אתכם! הזמינו תור ב-${businessName} בכמה צעדים פשוטים.`}
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Button href="/book" size="xl">
+              הזמנת תור
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="page-container section-spacing">
-        <div className="mx-auto max-w-3xl text-center">
-          <Badge variant="secondary" className="mb-6">
-            Features
-          </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-[#111827] sm:text-5xl">
-            Everything you need to run your schedule
+      {activeServices.length > 0 && (
+        <section className="page-container pb-12 sm:pb-16">
+          <div className="mb-8 text-center sm:mb-10">
+            <p className="section-eyebrow">השירותים שלנו</p>
+            <h2 className="mt-2 text-2xl font-extrabold text-[#111827] sm:text-3xl">
+              מה אפשר להזמין
+            </h2>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {activeServices.slice(0, 6).map((service) => (
+              <Link
+                key={service.id}
+                href="/book"
+                className="group overflow-hidden rounded-2xl border border-primary/10 bg-white/80 shadow-[var(--card-shadow)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--card-shadow-lg)]"
+              >
+                <ServiceImage
+                  name={service.name}
+                  imageUrl={service.imageUrl}
+                  seed={service.id}
+                  size="lg"
+                  className="rounded-none ring-0"
+                />
+                <div className="p-5">
+                  <p className="text-lg font-bold text-[#111827] group-hover:text-primary">
+                    {service.name}
+                  </p>
+                  {service.description && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">
+                      {service.description}
+                    </p>
+                  )}
+                  <div className="mt-4 flex items-center gap-3 text-sm font-semibold">
+                    <span className="rounded-lg bg-primary-soft px-3 py-1 text-primary">
+                      {service.durationMinutes} דק׳
+                    </span>
+                    <span className="text-[#111827]">
+                      {formatPrice(service.price)}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {activeServices.length > 6 && (
+            <div className="mt-8 text-center">
+              <Button href="/book" variant="outline" size="lg">
+                לכל השירותים
+              </Button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeServices.length === 0 && (
+        <section className="page-container pb-12 sm:pb-16">
+          <EmptyState
+            compact
+            icon="✨"
+            title="בקרוב — שירותים חדשים"
+            description="העסק מעדכן כעת את רשימת השירותים. חזרו בקרוב או צרו קשר ישירות."
+            action={{ label: "לדף ההזמנה", href: "/book" }}
+          />
+        </section>
+      )}
+
+      <section className="page-container section-spacing pt-0">
+        <div className="mb-10 text-center sm:mb-14">
+          <p className="section-eyebrow">איך זה עובד</p>
+          <h2 className="mt-2 text-2xl font-extrabold text-[#111827] sm:text-3xl">
+            הזמנה ב-3 צעדים
           </h2>
-          <p className="mt-6 text-xl leading-relaxed text-muted">
-            Powerful tools designed for busy owners who care deeply about their
-            clients.
-          </p>
         </div>
 
-        <div className="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature, i) => (
-            <Card
-              key={feature.title}
-              hover
-              accent={i % 2 === 0 ? "primary" : "secondary"}
-              padding="md"
-            >
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-light to-white text-2xl shadow-sm ring-1 ring-primary/10"
-                role="img"
-                aria-hidden="true"
-              >
-                {feature.icon}
+        <div className="grid gap-5 sm:grid-cols-3 sm:gap-6">
+          {customerBookingSteps.map((step, index) => (
+            <Card key={step.title} glass accent="primary" padding="md">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-xl ring-1 ring-primary/10">
+                {step.icon}
               </span>
-              <h3 className="mt-6 text-xl font-bold text-[#111827]">
-                {feature.title}
+              <p className="mt-4 text-xs font-bold text-primary">
+                שלב {index + 1}
+              </p>
+              <h3 className="mt-1 text-xl font-extrabold text-[#111827]">
+                {step.title}
               </h3>
               <p className="mt-3 text-base leading-relaxed text-muted">
-                {feature.description}
+                {step.description}
               </p>
             </Card>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="page-container pb-24 sm:pb-32 lg:pb-40">
-        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-[#7c3aed] to-[#9333ea] px-8 py-16 shadow-2xl shadow-primary/25 sm:px-16 sm:py-20 lg:px-20">
-          <div className="gradient-blob -right-20 -top-20 h-80 w-80 bg-white/15" />
-          <div className="gradient-blob -bottom-20 -left-20 h-64 w-64 bg-secondary/25" />
-
-          <div className="relative z-10 mx-auto max-w-3xl text-center">
-            <Badge
-              variant="neutral"
-              className="mb-8 bg-white/20 text-white ring-white/25"
-            >
-              Get started free
-            </Badge>
-            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-              Ready to simplify your bookings?
+      <section className="page-container pb-20 sm:pb-28">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-bl from-[#6d28d9] via-[#7c3aed] to-[#8b5cf6] px-6 py-14 shadow-2xl shadow-primary/30 sm:rounded-[2.5rem] sm:px-14 sm:py-16">
+          <div className="absolute inset-0 mesh-grid opacity-20" />
+          <div className="relative z-10 mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+              מוכנים להזמין?
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/90 sm:text-xl">
-              Start accepting online appointments today. A warm, professional
-              experience for you and every client.
+            <p className="mx-auto mt-4 text-lg leading-relaxed text-white/90">
+              בחרו שירות, מועד נוח — ונשלים את ההזמנה תוך דקות.
             </p>
-            <div className="mt-12 flex flex-col items-center justify-center gap-5 sm:flex-row">
+            <div className="mt-8">
               <Button
                 href="/book"
                 size="xl"
                 className="bg-white text-primary shadow-xl hover:bg-white hover:shadow-2xl"
               >
-                Get Started — Book Now
-              </Button>
-              <Button
-                href="/admin"
-                variant="outline"
-                size="lg"
-                className="border-2 border-white/50 bg-white/10 text-white backdrop-blur-sm hover:border-white hover:bg-white/20"
-              >
-                View Dashboard
+                הזמנת תור
               </Button>
             </div>
           </div>
