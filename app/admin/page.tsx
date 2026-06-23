@@ -12,14 +12,13 @@ import { useServices } from "@/hooks/useServices";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
 import { groupAppointmentsByDay } from "@/lib/appointment-groups";
 import {
-  calculateExpectedRevenue,
-  getUpcomingAppointments,
+  getConfirmedAppointmentsForNextWeek,
+  getTodayExpectedRevenue,
 } from "@/lib/dashboard-stats";
 import { getTodayDateString } from "@/lib/dates";
 import {
   appointmentStatusLabels,
   formatCurrency,
-  formatShortDate,
 } from "@/lib/i18n";
 
 export default function AdminDashboardPage() {
@@ -47,7 +46,7 @@ export default function AdminDashboardPage() {
       (appointment) => appointment.status === "confirmed"
     ).length;
 
-    const revenue = calculateExpectedRevenue(
+    const revenue = getTodayExpectedRevenue(
       appointments,
       getServicePrice,
       today
@@ -56,33 +55,15 @@ export default function AdminDashboardPage() {
     return { todayAppointments, pending, confirmed, revenue };
   }, [appointments, today, services]);
 
-  const upcomingAppointments = useMemo(
-    () => getUpcomingAppointments(appointments, today, 7),
+  const confirmedWeekAppointments = useMemo(
+    () => getConfirmedAppointmentsForNextWeek(appointments, today, 7),
     [appointments, today]
   );
 
-  const upcomingGroups = useMemo(
-    () => groupAppointmentsByDay(upcomingAppointments),
-    [upcomingAppointments]
+  const confirmedWeekGroups = useMemo(
+    () => groupAppointmentsByDay(confirmedWeekAppointments),
+    [confirmedWeekAppointments]
   );
-
-  const todayPending = appointments.filter(
-    (appointment) =>
-      appointment.appointmentDate === today &&
-      appointment.status === "pending"
-  ).length;
-
-  const todayConfirmed = appointments.filter(
-    (appointment) =>
-      appointment.appointmentDate === today &&
-      appointment.status === "confirmed"
-  ).length;
-
-  const todayActive = todayPending + todayConfirmed;
-  const confirmRate =
-    todayActive > 0
-      ? Math.round((todayConfirmed / todayActive) * 100)
-      : 0;
 
   if (!isReady) {
     return (
@@ -125,10 +106,10 @@ export default function AdminDashboardPage() {
             testId="dashboard-stat-confirmed"
           />
           <StatCard
-            label="הכנסות צפויות"
+            label="הכנסות צפויות היום"
             value={formatCurrency(stats.revenue)}
             icon="💰"
-            trend="מתורים מאושרים עתידיים"
+            trend="מתורים מאושרים להיום"
             variant="secondary"
             testId="dashboard-stat-revenue"
           />
@@ -199,32 +180,34 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="section-eyebrow">פעילות</p>
                 <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
-                  תורים קרובים
+                  תורים מאושרים השבוע
                 </h2>
                 <p className="mt-2 text-base text-muted">
-                  {upcomingAppointments.length > 0
-                    ? "התורים הבאים בעסק"
-                    : "אין תורים קרובים להצגה"}
+                  {confirmedWeekAppointments.length > 0
+                    ? "תורים מאושרים לשבוע הקרוב"
+                    : "אין תורים מאושרים לשבוע הקרוב"}
                 </p>
               </div>
-              {upcomingAppointments.length > 0 && (
-                <Badge variant="secondary">{confirmRate}% מאושרים היום</Badge>
+              {confirmedWeekAppointments.length > 0 && (
+                <Badge variant="secondary">
+                  {confirmedWeekAppointments.length} תורים
+                </Badge>
               )}
             </div>
 
-            {upcomingAppointments.length === 0 ? (
+            {confirmedWeekAppointments.length === 0 ? (
               <div className="mt-8">
                 <EmptyState
                   compact
                   icon="📅"
-                  title="אין תורים קרובים"
-                  description="כשיתקבלו הזמנות חדשות לימים הקרובים, הן יופיעו כאן."
+                  title="אין תורים מאושרים לשבוע הקרוב"
+                  description="כשיתקבלו הזמנות מאושרות לימים הקרובים, הן יופיעו כאן."
                   action={{ label: "לדף ההזמנה", href: "/book" }}
                 />
               </div>
             ) : (
               <div className="mt-8 space-y-6">
-                {upcomingGroups.map((group) => (
+                {confirmedWeekGroups.map((group) => (
                   <div key={group.date}>
                     <p className="mb-3 text-sm font-bold text-primary">
                       {group.label}

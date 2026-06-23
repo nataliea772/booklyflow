@@ -14,6 +14,7 @@ import {
   useServices,
 } from "@/hooks/useServices";
 import { formatPrice } from "@/lib/i18n";
+import { formatDurationHebrew } from "@/lib/time-format";
 import type { Service } from "@/lib/types";
 
 type ServiceFormMode = "add" | "edit";
@@ -220,7 +221,7 @@ export default function ServicesPage() {
                           </div>
                           <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
                             <span className="inline-flex rounded-xl bg-primary-soft px-4 py-1.5 text-sm font-semibold text-primary ring-1 ring-primary/10">
-                              {service.durationMinutes} דק׳
+                              {formatDurationHebrew(service.durationMinutes)}
                             </span>
                             <span className="text-xl font-bold text-[#111827]">
                               {formatPrice(service.price)}

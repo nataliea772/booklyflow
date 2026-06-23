@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateExpectedRevenue,
+  getConfirmedAppointmentsForNextWeek,
+  getTodayExpectedRevenue,
   getUpcomingAppointments,
   isUpcomingAppointment,
 } from "@/lib/dashboard-stats";
@@ -101,6 +103,65 @@ describe("isUpcomingAppointment", () => {
   });
 });
 
+describe("getTodayExpectedRevenue", () => {
+  it("includes only confirmed appointments for today", () => {
+    const appointments = [
+      createAppointment({ id: "1", serviceId: "1", status: "confirmed" }),
+      createAppointment({
+        id: "2",
+        serviceId: "2",
+        status: "confirmed",
+        startTime: "09:00",
+      }),
+      createAppointment({ id: "3", serviceId: "2", status: "pending" }),
+      createAppointment({ id: "4", serviceId: "1", status: "cancelled" }),
+      createAppointment({ id: "5", serviceId: "1", status: "completed" }),
+    ];
+
+    expect(getTodayExpectedRevenue(appointments, getServicePrice, today)).toBe(
+      175
+    );
+  });
+
+  it("excludes yesterday and tomorrow", () => {
+    const appointments = [
+      createAppointment({
+        id: "yesterday",
+        appointmentDate: "2026-06-21",
+        serviceId: "2",
+      }),
+      createAppointment({
+        id: "tomorrow",
+        appointmentDate: "2026-06-23",
+        serviceId: "2",
+      }),
+      createAppointment({
+        id: "today",
+        appointmentDate: today,
+        serviceId: "1",
+      }),
+    ];
+
+    expect(getTodayExpectedRevenue(appointments, getServicePrice, today)).toBe(
+      55
+    );
+  });
+
+  it("returns zero when there are no confirmed appointments today", () => {
+    const appointments = [
+      createAppointment({ status: "pending" }),
+      createAppointment({
+        appointmentDate: "2026-06-23",
+        status: "confirmed",
+      }),
+    ];
+
+    expect(getTodayExpectedRevenue(appointments, getServicePrice, today)).toBe(
+      0
+    );
+  });
+});
+
 describe("calculateExpectedRevenue", () => {
   it("sums only confirmed upcoming appointments", () => {
     const appointments = [
@@ -155,6 +216,85 @@ describe("calculateExpectedRevenue", () => {
     expect(
       calculateExpectedRevenue(appointments, getServicePrice, today, now)
     ).toBe(55);
+  });
+});
+
+describe("getConfirmedAppointmentsForNextWeek", () => {
+  it("includes confirmed appointments from today through seven days ahead", () => {
+    const appointments = [
+      createAppointment({ id: "today", startTime: "16:00" }),
+      createAppointment({
+        id: "day-7",
+        appointmentDate: "2026-06-29",
+        startTime: "11:00",
+      }),
+      createAppointment({
+        id: "day-8",
+        appointmentDate: "2026-06-30",
+        startTime: "11:00",
+      }),
+      createAppointment({
+        id: "pending",
+        appointmentDate: "2026-06-23",
+        status: "pending",
+      }),
+      createAppointment({
+        id: "past",
+        appointmentDate: "2026-06-21",
+        status: "confirmed",
+      }),
+    ];
+
+    const week = getConfirmedAppointmentsForNextWeek(
+      appointments,
+      today,
+      7
+    );
+
+    expect(week.map((appointment) => appointment.id)).toEqual([
+      "today",
+      "day-7",
+    ]);
+  });
+
+  it("sorts by date and time and limits results", () => {
+    const appointments = [
+      createAppointment({
+        id: "later-day",
+        appointmentDate: "2026-06-24",
+        startTime: "15:00",
+      }),
+      createAppointment({
+        id: "today-later",
+        startTime: "16:00",
+      }),
+      createAppointment({
+        id: "today-sooner",
+        startTime: "09:00",
+      }),
+      createAppointment({
+        id: "tomorrow",
+        appointmentDate: "2026-06-23",
+        startTime: "10:00",
+      }),
+      createAppointment({
+        id: "cancelled",
+        appointmentDate: "2026-06-23",
+        status: "cancelled",
+      }),
+    ];
+
+    const week = getConfirmedAppointmentsForNextWeek(
+      appointments,
+      today,
+      3
+    );
+
+    expect(week.map((appointment) => appointment.id)).toEqual([
+      "today-sooner",
+      "today-later",
+      "tomorrow",
+    ]);
   });
 });
 

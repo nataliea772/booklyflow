@@ -2,6 +2,7 @@
 
 import type { Service } from "@/lib/types";
 import { formatPrice } from "@/lib/i18n";
+import { formatDurationHebrew } from "@/lib/time-format";
 import ServiceImage from "@/components/ServiceImage";
 
 type ServiceSelectCardsProps = {
@@ -63,7 +64,7 @@ export default function ServiceSelectCards({
               )}
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="inline-flex rounded-full bg-[#fff1f7] px-3 py-1 text-xs font-bold text-charcoal ring-1 ring-[#f9a8d4]/35">
-                  {service.durationMinutes} דק׳
+                  {formatDurationHebrew(service.durationMinutes)}
                 </span>
                 <span className="text-sm font-bold text-rose">
                   {formatPrice(service.price)}

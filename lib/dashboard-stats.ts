@@ -1,3 +1,4 @@
+import { addDaysToDateString, getTodayDateString } from "@/lib/dates";
 import type { Appointment } from "./types";
 
 export type ServicePriceLookup = (serviceId: string) => number;
@@ -5,6 +6,18 @@ export type ServicePriceLookup = (serviceId: string) => number;
 function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+function sortAppointmentsByDateAndTime(
+  a: Appointment,
+  b: Appointment
+): number {
+  const dateCompare = a.appointmentDate.localeCompare(b.appointmentDate);
+  if (dateCompare !== 0) {
+    return dateCompare;
+  }
+
+  return a.startTime.localeCompare(b.startTime);
 }
 
 /** True when appointment is today or later and its start time has not passed. */
@@ -43,6 +56,7 @@ export function isConfirmedUpcomingAppointment(
   );
 }
 
+/** @deprecated Use getTodayExpectedRevenue for dashboard revenue. */
 export function calculateExpectedRevenue(
   appointments: Appointment[],
   getServicePrice: ServicePriceLookup,
@@ -59,6 +73,24 @@ export function calculateExpectedRevenue(
     );
 }
 
+/** Sum of confirmed appointment prices for today only. */
+export function getTodayExpectedRevenue(
+  appointments: Appointment[],
+  getServicePrice: ServicePriceLookup,
+  today: string = getTodayDateString()
+): number {
+  return appointments
+    .filter(
+      (appointment) =>
+        appointment.appointmentDate === today &&
+        appointment.status === "confirmed"
+    )
+    .reduce(
+      (total, appointment) => total + getServicePrice(appointment.serviceId),
+      0
+    );
+}
+
 export function getUpcomingAppointments(
   appointments: Appointment[],
   today: string,
@@ -67,12 +99,25 @@ export function getUpcomingAppointments(
 ): Appointment[] {
   return appointments
     .filter((appointment) => isUpcomingAppointment(appointment, today, now))
-    .sort((a, b) => {
-      const dateCompare = a.appointmentDate.localeCompare(b.appointmentDate);
-      if (dateCompare !== 0) {
-        return dateCompare;
-      }
-      return a.startTime.localeCompare(b.startTime);
-    })
+    .sort(sortAppointmentsByDateAndTime)
+    .slice(0, limit);
+}
+
+/** Confirmed appointments from today through seven days ahead (inclusive). */
+export function getConfirmedAppointmentsForNextWeek(
+  appointments: Appointment[],
+  today: string = getTodayDateString(),
+  limit = 7
+): Appointment[] {
+  const endDate = addDaysToDateString(today, 7);
+
+  return appointments
+    .filter(
+      (appointment) =>
+        appointment.status === "confirmed" &&
+        appointment.appointmentDate >= today &&
+        appointment.appointmentDate <= endDate
+    )
+    .sort(sortAppointmentsByDateAndTime)
     .slice(0, limit);
 }
