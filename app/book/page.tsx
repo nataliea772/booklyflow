@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import BookingCalendar from "@/components/BookingCalendar";
 import BookingSteps from "@/components/BookingSteps";
 import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
 import CustomerReviews from "@/components/CustomerReviews";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/booking-window";
 import { getPublicBusinessName } from "@/lib/business-config";
 import { getTodayDateString } from "@/lib/dates";
+import { formatDisplayDate } from "@/lib/i18n";
 import type { TimeSlot } from "@/lib/types";
 
 export default function BookPage() {
@@ -47,6 +49,7 @@ export default function BookPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const isReady =
     servicesReady && settingsReady && appointmentsReady && blockedTimesReady;
@@ -91,6 +94,17 @@ export default function BookPage() {
   useEffect(() => {
     setSelectedStartTime("");
   }, [serviceId, appointmentDate]);
+
+  useEffect(() => {
+    if (!serviceId) {
+      setIsCalendarOpen(false);
+    }
+  }, [serviceId]);
+
+  const isDateDisabledForCalendar = useMemo(
+    () => (date: string) => isDateFullyBlocked(date, blockedTimes),
+    [blockedTimes]
+  );
 
   const isFormComplete =
     Boolean(serviceId) &&
@@ -239,41 +253,50 @@ export default function BookPage() {
 
                 <div>
                   <label
-                    htmlFor="date"
+                    htmlFor="booking-date-toggle"
                     className="mb-2.5 block text-sm font-bold text-charcoal"
                   >
                     בחרי תאריך
                   </label>
-                  <div className="booking-date-shell">
-                    <span className="booking-date-icon" aria-hidden="true">
-                      <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={1.75}
+                  <button
+                    id="booking-date-toggle"
+                    type="button"
+                    data-testid="booking-date-toggle"
+                    disabled={!serviceId}
+                    aria-expanded={isCalendarOpen}
+                    aria-describedby="date-helper-text"
+                    onClick={() => setIsCalendarOpen((open) => !open)}
+                    className="booking-date-field flex w-full items-center justify-between gap-3 text-right disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-muted"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-neutral-50 text-charcoal"
+                        aria-hidden="true"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8 4v2m8-2v2M4 9h16M6 6h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z"
-                        />
-                      </svg>
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.75}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8 4v2m8-2v2M4 9h16M6 6h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z"
+                          />
+                        </svg>
+                      </span>
+                      <span className="font-semibold">
+                        {appointmentDate
+                          ? formatDisplayDate(appointmentDate)
+                          : "בחרי תאריך"}
+                      </span>
                     </span>
-                    <input
-                      type="date"
-                      id="date"
-                      name="date"
-                      data-testid="date-input"
-                      value={appointmentDate}
-                      onChange={(e) => setAppointmentDate(e.target.value)}
-                      min={today}
-                      max={maxBookingDate}
-                      className="booking-date-field"
-                      disabled={!serviceId}
-                      aria-describedby="date-helper-text"
-                    />
-                  </div>
+                    <span className="text-sm text-muted" aria-hidden="true">
+                      {isCalendarOpen ? "▲" : "▼"}
+                    </span>
+                  </button>
                   <p
                     id="date-helper-text"
                     className="mt-2 text-sm text-muted"
@@ -281,6 +304,21 @@ export default function BookPage() {
                   >
                     בחרי תאריך כדי לראות שעות פנויות
                   </p>
+
+                  {isCalendarOpen && serviceId && (
+                    <div className="mt-4">
+                      <BookingCalendar
+                        selectedDate={appointmentDate}
+                        onSelectDate={(date) => {
+                          setAppointmentDate(date);
+                          setIsCalendarOpen(false);
+                        }}
+                        minDate={today}
+                        maxDate={maxBookingDate}
+                        isDateDisabled={isDateDisabledForCalendar}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-xs text-muted">{hoursHint}</p>

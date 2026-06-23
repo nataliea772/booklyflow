@@ -53,7 +53,28 @@ async function fillBookingForm(
 
 async function selectServiceAndDate(page: Page, appointmentDate: string) {
   await page.getByTestId("service-select").selectOption(E2E_SERVICE_ID);
-  await page.getByTestId("date-input").fill(appointmentDate);
+  await page.getByTestId("booking-date-toggle").click();
+
+  const calendar = page.getByTestId("booking-calendar");
+  await expect(calendar).toBeVisible();
+
+  const targetMonth = appointmentDate.slice(0, 7);
+
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const visibleMonth = await calendar.getAttribute("data-month");
+    if (visibleMonth === targetMonth) {
+      break;
+    }
+
+    if (!visibleMonth || visibleMonth < targetMonth) {
+      await page.getByTestId("calendar-next-month").click();
+    } else {
+      await page.getByTestId("calendar-prev-month").click();
+    }
+  }
+
+  await expect(calendar).toHaveAttribute("data-month", targetMonth);
+  await page.getByTestId(`calendar-day-${appointmentDate}`).click();
   await expect(page.getByTestId(/^time-slot-/).first()).toBeVisible();
 }
 
