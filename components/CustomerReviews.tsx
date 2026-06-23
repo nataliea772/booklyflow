@@ -48,11 +48,14 @@ export default function CustomerReviews() {
       data-testid="customer-reviews-section"
     >
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 rounded-[1.5rem] bg-gradient-to-l from-[#111014] via-[#2a1026] to-[#4a1538] px-6 py-5 text-center shadow-[var(--card-shadow-lg)]">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#f9a8d4]">
-            חוויות לקוחות
-          </p>
-          <h2 className="mt-2 text-2xl font-extrabold text-[#fffafc] sm:text-3xl">
+        <div className="mb-6 content-panel px-6 py-5 text-center">
+          <p className="section-eyebrow">חוויות לקוחות</p>
+          <div className="boutique-dot-divider" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <h2 className="mt-3 text-2xl font-extrabold text-charcoal sm:text-3xl">
             לקוחות מספרות
           </h2>
         </div>
@@ -67,7 +70,7 @@ export default function CustomerReviews() {
               <div className="flex items-start justify-between gap-3">
                 <p className="font-bold text-charcoal">{review.customerName}</p>
                 <span
-                  className="shrink-0 text-sm tracking-tight text-rose"
+                  className="shrink-0 text-sm tracking-tight text-charcoal"
                   aria-label={`דירוג ${review.rating} מתוך 5`}
                 >
                   {formatStarRating(review.rating)}

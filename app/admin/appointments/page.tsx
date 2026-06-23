@@ -6,7 +6,9 @@ import AppointmentEditForm from "@/components/AppointmentEditForm";
 import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
+import AppointmentDetailsModal from "@/components/AppointmentDetailsModal";
 import EmptyState from "@/components/EmptyState";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useBlockedTimes } from "@/hooks/useBlockedTimes";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
@@ -99,6 +101,9 @@ export default function AppointmentsPage() {
     message: string;
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [detailsAppointmentId, setDetailsAppointmentId] = useState<string | null>(
+    null
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatusFilter>("all");
   const [dateFilter, setDateFilter] = useState("");
@@ -168,6 +173,14 @@ export default function AppointmentsPage() {
   const groupedAppointments = useMemo(
     () => groupAppointmentsByDay(filteredAppointments),
     [filteredAppointments]
+  );
+
+  const detailsAppointment = useMemo(
+    () =>
+      detailsAppointmentId
+        ? appointments.find((item) => item.id === detailsAppointmentId) ?? null
+        : null,
+    [appointments, detailsAppointmentId]
   );
 
   const statusCounts = useMemo(
@@ -381,7 +394,7 @@ export default function AppointmentsPage() {
       >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-bl from-charcoal to-rose text-sm font-bold text-white shadow-md shadow-rose/25">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-charcoal text-sm font-bold text-white shadow-sm">
               {appointment.customerName.charAt(0)}
             </span>
             <div>
@@ -432,6 +445,15 @@ export default function AppointmentsPage() {
             </span>
 
             <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDetailsAppointmentId(appointment.id)}
+                data-testid={`details-appointment-${appointment.id}`}
+              >
+                פרטים
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -506,9 +528,14 @@ export default function AppointmentsPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <div className="page-container pb-12">
+          <PageLoadingState label="טוען תורים…" />
+        </div>
+      </>
     );
   }
 
@@ -548,7 +575,7 @@ export default function AppointmentsPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="manual-whatsapp-link"
-                className="mt-3 inline-flex items-center rounded-full bg-gradient-to-l from-charcoal to-rose px-4 py-2 text-xs font-bold text-white shadow-md transition-opacity hover:opacity-90"
+                className="boutique-button mt-3 inline-flex items-center px-4 py-2 text-xs"
               >
                 שליחה ידנית ב-WhatsApp
               </a>
@@ -575,8 +602,8 @@ export default function AppointmentsPage() {
         {appointments.length === 0 ? (
           <EmptyState
             icon="📋"
-            title="אין תורים להצגה כרגע"
-            description="כשלקוחות יזמינו תורים דרך דף ההזמנה, הם יופיעו כאן לאישור וניהול."
+            title="עדיין אין תורים"
+            description="ברגע שלקוחה תקבע תור, הוא יופיע כאן."
             action={{ label: "לדף ההזמנה", href: "/book" }}
           />
         ) : (
@@ -587,7 +614,7 @@ export default function AppointmentsPage() {
             />
 
             <div
-              className="mb-6 grid gap-4 rounded-2xl border border-primary/10 bg-white/80 p-4 sm:grid-cols-2 lg:grid-cols-4"
+              className="mb-6 grid gap-4 rounded-2xl border border-primary/10 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4"
               data-testid="appointments-filter-panel"
             >
               <div className="sm:col-span-2 lg:col-span-4">
@@ -723,6 +750,21 @@ export default function AppointmentsPage() {
           </Card>
         )}
       </div>
+
+      <AppointmentDetailsModal
+        appointment={detailsAppointment}
+        services={services}
+        businessSettings={businessSettings}
+        open={detailsAppointmentId !== null}
+        onClose={() => setDetailsAppointmentId(null)}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        onComplete={handleComplete}
+        onDelete={handleDelete}
+        onEdit={setEditingId}
+        confirmingId={confirmingId}
+        deletingId={deletingId}
+      />
     </>
   );
 }

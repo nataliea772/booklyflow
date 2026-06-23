@@ -23,10 +23,10 @@ function navLinkClassName(isLinkActive: boolean): string {
     "flex min-h-[44px] w-full items-center justify-center rounded-2xl px-3 py-2.5 text-center text-sm font-bold transition-all duration-200";
 
   if (isLinkActive) {
-    return `${base} btn-gradient text-white shadow-md shadow-rose/25`;
+    return `${base} bg-charcoal text-white shadow-sm`;
   }
 
-  return `${base} border border-rose/10 bg-white/90 text-charcoal hover:border-rose/25 hover:bg-[#fff1f7] hover:text-rose`;
+  return `${base} border border-black/10 bg-white text-charcoal hover:border-black/20 hover:bg-neutral-50`;
 }
 
 export default function AdminNav() {
@@ -53,7 +53,7 @@ export default function AdminNav() {
       data-testid="admin-nav"
     >
       <div className="admin-shell mx-auto w-full max-w-7xl px-4 sm:px-5">
-        <div className="flex items-center justify-end gap-3 border-b border-rose/10 py-2.5">
+        <div className="flex items-center justify-end gap-3 border-b border-black/10 bg-white/80 px-1 py-2.5">
           {authRequired && user?.email && (
             <span
               className="min-w-0 truncate text-xs font-medium text-muted sm:text-sm ltr-value"

@@ -32,17 +32,17 @@ export default function EmptyState({
       {!compact && (
         <>
           <div className="empty-state-glow pointer-events-none absolute inset-0" />
-          <div className="pointer-events-none absolute -top-16 start-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-[#f9a8d4]/20 blur-3xl" />
+          <div className="pointer-events-none absolute -top-16 start-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-black/5 blur-3xl" />
         </>
       )}
 
       <div className="relative">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[1.75rem] bg-gradient-to-bl from-[#fff1f7] via-white to-[#fce7f3] text-4xl shadow-[var(--card-shadow)] ring-1 ring-[#f9a8d4]/35">
+        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[1.75rem] bg-white text-4xl shadow-[var(--card-shadow)] ring-1 ring-black/10">
           <span role="img" aria-hidden="true">
             {icon}
           </span>
         </div>
-        <div className="absolute -inset-3 -z-10 rounded-[2rem] border border-dashed border-[#f9a8d4]/30" />
+        <div className="absolute -inset-3 -z-10 rounded-[2rem] border border-dashed border-black/10" />
       </div>
 
       <h3 className="relative mt-8 text-2xl font-extrabold tracking-tight text-charcoal sm:text-3xl">

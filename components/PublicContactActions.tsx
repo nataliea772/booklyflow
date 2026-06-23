@@ -95,7 +95,7 @@ export default function PublicContactActions({
             rel={action.external ? "noopener noreferrer" : undefined}
             data-testid={`public-contact-${action.id}`}
             aria-label={action.ariaLabel}
-            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#f9a8d4]/45 bg-gradient-to-bl from-[#fffafc] to-[#fff1f7] text-charcoal shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-rose/40 hover:bg-white hover:text-rose hover:shadow-[var(--ring-glow)] active:scale-95"
+            className="contact-icon-btn"
           >
             <Icon />
           </a>

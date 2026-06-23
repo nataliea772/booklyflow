@@ -68,14 +68,11 @@ test.describe("BooklyFlow booking flow", () => {
     await loginAsAdminIfRequired(page);
 
     await page.goto("/admin");
-    const pendingBefore = Number(
+    const weekBefore = Number(
       await page
-        .getByTestId("dashboard-stat-pending")
+        .getByTestId("dashboard-stat-week")
         .locator("p.text-4xl")
         .innerText()
-    );
-    const confirmedBefore = Number(
-      await page.getByTestId("dashboard-stat-confirmed").locator("p.text-4xl").innerText()
     );
 
     await page.goto("/book");
@@ -125,19 +122,15 @@ test.describe("BooklyFlow booking flow", () => {
 
     await page.goto("/admin");
     await expect(page.getByTestId("dashboard-stat-today")).toBeVisible();
-    await expect(page.getByTestId("dashboard-stat-pending")).toBeVisible();
-    await expect(page.getByTestId("dashboard-stat-confirmed")).toBeVisible();
+    await expect(page.getByTestId("dashboard-stat-week")).toBeVisible();
     await expect(page.getByTestId("dashboard-stat-revenue")).toBeVisible();
+    await expect(page.getByTestId("dashboard-stat-popular-service")).toBeVisible();
 
-    const pendingAfter = Number(
-      await page.getByTestId("dashboard-stat-pending").locator("p.text-4xl").innerText()
-    );
-    const confirmedAfter = Number(
-      await page.getByTestId("dashboard-stat-confirmed").locator("p.text-4xl").innerText()
+    const weekAfter = Number(
+      await page.getByTestId("dashboard-stat-week").locator("p.text-4xl").innerText()
     );
 
-    expect(pendingAfter).toBe(pendingBefore);
-    expect(confirmedAfter).toBe(confirmedBefore + 1);
+    expect(weekAfter).toBe(weekBefore + 1);
   });
 
   test("prevents double booking for the same service, date, and time", async ({

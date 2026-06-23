@@ -1,5 +1,5 @@
 import { addDaysToDateString, getTodayDateString } from "@/lib/dates";
-import type { Appointment } from "./types";
+import type { Appointment, CustomerReview } from "./types";
 
 export type ServicePriceLookup = (serviceId: string) => number;
 
@@ -120,4 +120,97 @@ export function getConfirmedAppointmentsForNextWeek(
     )
     .sort(sortAppointmentsByDateAndTime)
     .slice(0, limit);
+}
+
+/** Non-cancelled appointments scheduled for today. */
+export function getTodayAppointmentsCount(
+  appointments: Appointment[],
+  today: string = getTodayDateString()
+): number {
+  return appointments.filter(
+    (appointment) =>
+      appointment.appointmentDate === today &&
+      appointment.status !== "cancelled"
+  ).length;
+}
+
+/** Non-cancelled appointments from today through seven days ahead. */
+export function getWeekAppointmentsCount(
+  appointments: Appointment[],
+  today: string = getTodayDateString()
+): number {
+  const endDate = addDaysToDateString(today, 7);
+
+  return appointments.filter(
+    (appointment) =>
+      appointment.appointmentDate >= today &&
+      appointment.appointmentDate <= endDate &&
+      appointment.status !== "cancelled"
+  ).length;
+}
+
+export type PopularServiceResult = {
+  serviceId: string;
+  count: number;
+} | null;
+
+/** Service with the highest appointment count. Ties broken by first seen. */
+export function getMostPopularService(
+  appointments: Appointment[]
+): PopularServiceResult {
+  const counts = new Map<string, number>();
+
+  for (const appointment of appointments) {
+    if (appointment.status === "cancelled") {
+      continue;
+    }
+
+    counts.set(
+      appointment.serviceId,
+      (counts.get(appointment.serviceId) ?? 0) + 1
+    );
+  }
+
+  let top: PopularServiceResult = null;
+
+  for (const [serviceId, count] of counts) {
+    if (!top || count > top.count) {
+      top = { serviceId, count };
+    }
+  }
+
+  return top;
+}
+
+/** Average rating from visible reviews, rounded to one decimal. */
+export function getAverageReviewRating(
+  reviews: CustomerReview[],
+  options: { visibleOnly?: boolean } = {}
+): number | null {
+  const visibleOnly = options.visibleOnly ?? true;
+  const eligible = visibleOnly
+    ? reviews.filter((review) => review.isVisible)
+    : reviews;
+
+  if (eligible.length === 0) {
+    return null;
+  }
+
+  const total = eligible.reduce((sum, review) => sum + review.rating, 0);
+  return Math.round((total / eligible.length) * 10) / 10;
+}
+
+/** Cancelled appointments as a percentage of all appointments (0–100). */
+export function getCancellationRatePercent(
+  appointments: Appointment[]
+): number {
+  if (appointments.length === 0) {
+    return 0;
+  }
+
+  const cancelled = appointments.filter(
+    (appointment) => appointment.status === "cancelled"
+  ).length;
+
+  return Math.round((cancelled / appointments.length) * 1000) / 10;
 }

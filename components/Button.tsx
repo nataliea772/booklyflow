@@ -23,13 +23,13 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "btn-gradient text-white shadow-lg shadow-rose/30 hover:shadow-xl hover:shadow-rose/40 active:scale-[0.98] focus-visible:ring-rose relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
+    "bg-charcoal text-white shadow-md shadow-black/15 hover:bg-black hover:shadow-lg hover:shadow-black/20 active:scale-[0.98] focus-visible:ring-charcoal",
   secondary:
-    "bg-gradient-to-l from-rose to-[#ec4899] text-white shadow-lg shadow-rose/30 hover:shadow-xl hover:shadow-rose/40 active:scale-[0.98] focus-visible:ring-rose",
+    "bg-neutral-800 text-white shadow-md hover:bg-black active:scale-[0.98] focus-visible:ring-charcoal",
   outline:
-    "border-2 border-[#f9a8d4]/40 bg-[#fffafc]/95 text-charcoal shadow-sm backdrop-blur-sm hover:border-rose/35 hover:bg-white hover:shadow-[var(--card-shadow)] active:scale-[0.98] focus-visible:ring-rose",
+    "border-2 border-black/15 bg-white text-charcoal shadow-sm hover:border-black/30 hover:bg-neutral-50 active:scale-[0.98] focus-visible:ring-charcoal",
   ghost:
-    "bg-transparent text-charcoal hover:bg-[#fff1f7] hover:text-rose active:scale-[0.98] focus-visible:ring-rose",
+    "bg-transparent text-charcoal hover:bg-neutral-100 active:scale-[0.98] focus-visible:ring-charcoal",
   danger:
     "border-2 border-red-200 bg-white text-red-700 shadow-sm hover:border-red-300 hover:bg-red-50 active:scale-[0.98] focus-visible:ring-red-400",
 };

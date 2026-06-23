@@ -41,9 +41,9 @@ function ThankYouContent() {
   return (
     <div className="page-container py-10 sm:py-16">
       <div className="mx-auto max-w-lg">
-        <div className="boutique-card p-8 text-center sm:p-10">
+        <div className="boutique-hero-card p-8 text-center sm:p-10">
           <span
-            className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-bl from-[#fff1f7] to-[#fce7f3] text-4xl ring-2 ring-[#f9a8d4]/35"
+            className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neutral-50 text-4xl ring-2 ring-black/10"
             role="img"
             aria-hidden="true"
           >
@@ -60,7 +60,7 @@ function ThankYouContent() {
           </p>
 
           {showSummary && appointment && (
-            <div className="mt-8 rounded-2xl border border-[#f9a8d4]/30 bg-[#fff1f7]/70 p-6 text-right">
+            <div className="mt-8 rounded-2xl border border-black/10 bg-neutral-50 p-6 text-right">
               <p className="section-eyebrow">
                 סיכום התור
               </p>

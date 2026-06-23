@@ -25,8 +25,8 @@ const paddingStyles = {
 };
 
 const accentStyles = {
-  primary: "before:bg-gradient-to-l before:from-charcoal before:to-rose",
-  secondary: "before:bg-gradient-to-l before:from-rose before:to-[#ec4899]",
+  primary: "before:bg-charcoal",
+  secondary: "before:bg-neutral-400",
   none: "",
 };
 
@@ -41,8 +41,8 @@ export default function Card({
 }: CardProps) {
   const hasAccent = accent !== "none";
   const surface = glass
-    ? "glass-card border-white/90 bg-white/75"
-    : "border-primary/10 bg-white/90 backdrop-blur-sm";
+    ? "glass-card border-black/10 bg-white"
+    : "border-black/8 bg-white backdrop-blur-sm";
 
   return (
     <div

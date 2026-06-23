@@ -4,7 +4,7 @@ export default function PublicFooter() {
       <div className="page-container text-center">
         <p className="text-[11px] tracking-wide text-[#6B7280]/75">
           Powered by{" "}
-          <span className="font-medium text-rose/70">BooklyFlow</span>
+          <span className="font-medium text-charcoal/60">BooklyFlow</span>
         </p>
       </div>
     </footer>

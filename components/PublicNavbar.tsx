@@ -18,12 +18,12 @@ function linkClassName(isLinkActive: boolean, compact = false): string {
     : "inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold transition-all duration-200";
 
   if (isLinkActive) {
-    return `${base} bg-gradient-to-l from-rose to-[#ec4899] text-white shadow-md shadow-rose/30 ring-1 ring-[#f9a8d4]/40`;
+    return `${base} bg-charcoal text-white shadow-sm`;
   }
 
   return compact
-    ? `${base} text-[#fffafc] hover:bg-white/10`
-    : `${base} text-[#f9a8d4]/90 hover:bg-white/10 hover:text-[#fffafc]`;
+    ? `${base} text-charcoal hover:bg-neutral-100`
+    : `${base} text-muted hover:bg-neutral-100 hover:text-charcoal`;
 }
 
 export default function PublicNavbar() {
@@ -61,13 +61,13 @@ export default function PublicNavbar() {
   }, [mobileOpen]);
 
   return (
-    <header className="boutique-nav sticky top-0 z-50 h-[76px] shrink-0 overflow-hidden">
+    <header className="boutique-nav">
       <div className="page-container flex h-[76px] items-center justify-between gap-3 overflow-hidden">
         <Link
           href="/"
           className="flex min-w-0 max-w-[55%] items-center gap-2 overflow-hidden transition-opacity hover:opacity-90 sm:max-w-[320px]"
         >
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-bl from-[#111014] to-rose text-sm font-extrabold text-white shadow-md shadow-rose/30 ring-1 ring-[#f9a8d4]/30">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-charcoal text-sm font-extrabold text-white shadow-sm ring-1 ring-black/10">
             {settings.logoUrl ? (
               <Image
                 src={settings.logoUrl}
@@ -80,7 +80,7 @@ export default function PublicNavbar() {
               businessName.charAt(0)
             )}
           </span>
-          <span className="truncate text-base font-bold tracking-tight text-[#fffafc] sm:text-lg">
+          <span className="truncate text-base font-bold tracking-tight text-charcoal sm:text-lg">
             {businessName}
           </span>
         </Link>
@@ -102,7 +102,7 @@ export default function PublicNavbar() {
           </nav>
           <Link
             href="/login"
-            className="inline-flex h-10 items-center rounded-full px-4 text-xs font-medium text-[#f9a8d4]/85 transition-colors hover:bg-white/10 hover:text-[#fffafc]"
+            className="inline-flex h-10 items-center rounded-full px-4 text-xs font-medium text-muted transition-colors hover:bg-neutral-100 hover:text-charcoal"
           >
             כניסת מנהל
           </Link>
@@ -113,15 +113,15 @@ export default function PublicNavbar() {
             href="/book"
             className={`inline-flex h-10 max-w-[132px] items-center justify-center truncate rounded-full px-4 text-sm font-bold shadow-sm transition-all ${
               isActive("/book", false)
-                ? "bg-gradient-to-l from-rose to-[#ec4899] text-white ring-2 ring-[#f9a8d4]/50"
-                : "btn-gradient text-white hover:shadow-md"
+                ? "bg-charcoal text-white ring-2 ring-black/15"
+                : "bg-charcoal text-white hover:bg-black"
             }`}
           >
             הזמנת תור
           </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f9a8d4]/30 bg-white/10 text-[#fffafc] transition-colors hover:border-[#f9a8d4]/50 hover:bg-white/15"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-black/15 bg-white text-charcoal transition-colors hover:border-black/30 hover:bg-neutral-50"
             onClick={() => setMobileOpen((open) => !open)}
             aria-label={mobileOpen ? "סגירת תפריט" : "פתיחת תפריט"}
             aria-expanded={mobileOpen}
@@ -157,13 +157,13 @@ export default function PublicNavbar() {
         <>
           <button
             type="button"
-            className="fixed inset-x-0 bottom-0 top-[76px] z-40 bg-[#111014]/40 backdrop-blur-[1px] md:hidden"
+            className="fixed inset-x-0 bottom-0 top-[76px] z-40 bg-black/20 backdrop-blur-[1px] md:hidden"
             aria-label="סגירת תפריט"
             onClick={() => setMobileOpen(false)}
           />
           <div
             id="public-mobile-menu"
-            className="fixed inset-x-0 top-[76px] z-50 border-b border-[#f9a8d4]/20 bg-[#2a1026]/98 shadow-lg shadow-black/20 backdrop-blur-xl md:hidden"
+            className="fixed inset-x-0 top-[76px] z-50 border-b border-black/10 bg-white shadow-lg backdrop-blur-xl md:hidden"
           >
             <div className="page-container py-4">
               <ul className="flex flex-col gap-1">

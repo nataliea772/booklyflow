@@ -5,6 +5,7 @@ import AdminNav from "@/components/AdminNav";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
 import { useBlockedTimes } from "@/hooks/useBlockedTimes";
 import {
   isSingleDayBlock,
@@ -172,9 +173,7 @@ export default function BlockedTimesPage() {
         <div className="page-container pt-4 sm:pt-6">
           <AdminNav />
         </div>
-        <div className="page-container flex min-h-[40vh] items-center justify-center pb-16">
-          <div className="loader-premium" role="status" aria-label="טוען" />
-        </div>
+        <PageLoadingState label="טוען חסימות…" />
       </>
     );
   }
@@ -379,15 +378,15 @@ export default function BlockedTimesPage() {
             {sortedBlockedTimes.length === 0 ? (
               <EmptyState
                 icon="🌴"
-                title="אין חסימות עדיין"
-                description="הוסיפי תאריכי חופשה, הפסקות או ימים סגורים כדי שלקוחות לא יוכלו להזמין בזמנים אלו."
+                title="אין חסימות או חופשות"
+                description="כאן תוכלי להוסיף ימים ושעות שבהם העסק לא זמין."
               />
             ) : (
               <div className="space-y-3">
                 {sortedBlockedTimes.map((blocked) => (
                   <div
                     key={blocked.id}
-                    className="flex flex-col gap-4 rounded-2xl border border-primary/10 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-4 rounded-2xl border border-primary/10 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
                     data-testid={`blocked-time-row-${blocked.id}`}
                   >
                     <div>

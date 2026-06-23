@@ -6,14 +6,21 @@ import AdminNav from "@/components/AdminNav";
 import Badge from "@/components/Badge";
 import Card from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
+import { DashboardStatsSkeleton } from "@/components/LoadingSkeleton";
 import StatCard from "@/components/StatCard";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useReviews } from "@/hooks/useReviews";
 import { useServices } from "@/hooks/useServices";
 import { formatTimeLabel, getServiceName } from "@/lib/availability";
 import { groupAppointmentsByDay } from "@/lib/appointment-groups";
 import {
+  getAverageReviewRating,
+  getCancellationRatePercent,
   getConfirmedAppointmentsForNextWeek,
+  getMostPopularService,
+  getTodayAppointmentsCount,
   getTodayExpectedRevenue,
+  getWeekAppointmentsCount,
 } from "@/lib/dashboard-stats";
 import { getTodayDateString } from "@/lib/dates";
 import {
@@ -22,38 +29,42 @@ import {
 } from "@/lib/i18n";
 
 export default function AdminDashboardPage() {
-  const { appointments, isReady } = useAppointments();
-  const { services } = useServices();
+  const { appointments, isReady: appointmentsReady } = useAppointments();
+  const { services, isReady: servicesReady } = useServices();
+  const { reviews, isReady: reviewsReady } = useReviews();
   const today = getTodayDateString();
+
+  const isReady = appointmentsReady && servicesReady && reviewsReady;
 
   function getServicePrice(serviceId: string): number {
     return services.find((service) => service.id === serviceId)?.price ?? 0;
   }
 
   const stats = useMemo(() => {
-    const todayAppointments = appointments.filter(
-      (appointment) =>
-        appointment.appointmentDate === today &&
-        appointment.status !== "cancelled" &&
-        appointment.status !== "completed"
-    ).length;
-
-    const pending = appointments.filter(
-      (appointment) => appointment.status === "pending"
-    ).length;
-
-    const confirmed = appointments.filter(
-      (appointment) => appointment.status === "confirmed"
-    ).length;
-
+    const todayCount = getTodayAppointmentsCount(appointments, today);
+    const weekCount = getWeekAppointmentsCount(appointments, today);
     const revenue = getTodayExpectedRevenue(
       appointments,
       getServicePrice,
       today
     );
+    const popular = getMostPopularService(appointments);
+    const popularName = popular
+      ? getServiceName(services, popular.serviceId)
+      : "—";
+    const averageRating = getAverageReviewRating(reviews);
+    const cancellationRate = getCancellationRatePercent(appointments);
 
-    return { todayAppointments, pending, confirmed, revenue };
-  }, [appointments, today, services]);
+    return {
+      todayCount,
+      weekCount,
+      revenue,
+      popularName,
+      popularCount: popular?.count ?? 0,
+      averageRating,
+      cancellationRate,
+    };
+  }, [appointments, today, services, reviews]);
 
   const confirmedWeekAppointments = useMemo(
     () => getConfirmedAppointmentsForNextWeek(appointments, today, 7),
@@ -67,9 +78,17 @@ export default function AdminDashboardPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <div className="page-container pb-12">
+          <DashboardStatsSkeleton />
+          <p className="mt-6 text-center text-sm font-semibold text-muted">
+            טוען לוח בקרה…
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -80,45 +99,74 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="page-container pb-12 sm:pb-16">
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-8">
+          <p className="section-eyebrow">סקירה</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-charcoal sm:text-3xl">
+            לוח בקרה
+          </h1>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
-            label="תורים להיום"
-            value={stats.todayAppointments}
+            label="תורים היום"
+            value={stats.todayCount}
             icon="📅"
-            trend="מתוזמנים להיום"
+            trend="כל התורים שלא בוטלו"
             variant="primary"
             testId="dashboard-stat-today"
           />
           <StatCard
-            label="ממתינים לאישור"
-            value={stats.pending}
-            icon="⏳"
-            trend="דורשים טיפול"
-            variant="amber"
-            testId="dashboard-stat-pending"
-          />
-          <StatCard
-            label="תורים מאושרים"
-            value={stats.confirmed}
-            icon="✅"
-            trend="כל ההזמנות המאושרות"
-            variant="emerald"
-            testId="dashboard-stat-confirmed"
+            label="תורים השבוע"
+            value={stats.weekCount}
+            icon="🗓️"
+            trend="7 ימים קדימה"
+            variant="secondary"
+            testId="dashboard-stat-week"
           />
           <StatCard
             label="הכנסות צפויות היום"
             value={formatCurrency(stats.revenue)}
             icon="💰"
             trend="מתורים מאושרים להיום"
-            variant="secondary"
+            variant="emerald"
             testId="dashboard-stat-revenue"
+          />
+          <StatCard
+            label="שירות הכי פופולרי"
+            value={stats.popularName}
+            icon="✨"
+            trend={
+              stats.popularCount > 0
+                ? `${stats.popularCount} תורים`
+                : "אין נתונים עדיין"
+            }
+            variant="primary"
+            testId="dashboard-stat-popular-service"
+          />
+          <StatCard
+            label="דירוג ממוצע"
+            value={
+              stats.averageRating !== null ? `${stats.averageRating}` : "—"
+            }
+            icon="⭐"
+            trend="מביקורות גלויות"
+            variant="amber"
+            testId="dashboard-stat-average-rating"
+          />
+          <StatCard
+            label="אחוז ביטולים"
+            value={`${stats.cancellationRate}%`}
+            icon="📉"
+            trend="מכלל התורים"
+            variant="secondary"
+            testId="dashboard-stat-cancellation-rate"
           />
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:gap-8">
           <Card glass accent="primary" padding="lg">
             <p className="section-eyebrow">קיצורי דרך</p>
-            <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
+            <h2 className="mt-2 text-xl font-extrabold text-charcoal sm:text-2xl">
               פעולות מהירות
             </h2>
             <p className="mt-2 text-base text-muted">מעבר למשימות נפוצות</p>
@@ -152,21 +200,19 @@ export default function AdminDashboardPage() {
                 <li key={action.href}>
                   <Link
                     href={action.href}
-                    className="group flex items-center gap-4 rounded-2xl border border-primary/8 bg-white/70 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[var(--card-shadow)]"
+                    className="group flex items-center gap-4 rounded-2xl border border-black/8 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-black/15 hover:shadow-[var(--card-shadow)]"
                   >
                     <span
-                      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-primary/10 transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20"
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-50 text-xl shadow-sm ring-1 ring-black/10 transition-all duration-200 group-hover:bg-charcoal group-hover:text-white"
                       aria-hidden="true"
                     >
                       {action.icon}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[#111827] group-hover:text-primary">
-                        {action.label}
-                      </p>
+                      <p className="font-semibold text-charcoal">{action.label}</p>
                       <p className="mt-0.5 text-sm text-muted">{action.desc}</p>
                     </div>
-                    <span className="text-xl text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-xl text-charcoal opacity-0 transition-opacity group-hover:opacity-100">
                       ←
                     </span>
                   </Link>
@@ -179,7 +225,7 @@ export default function AdminDashboardPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-eyebrow">פעילות</p>
-                <h2 className="mt-2 text-xl font-extrabold text-[#111827] sm:text-2xl">
+                <h2 className="mt-2 text-xl font-extrabold text-charcoal sm:text-2xl">
                   תורים מאושרים השבוע
                 </h2>
                 <p className="mt-2 text-base text-muted">
@@ -200,7 +246,7 @@ export default function AdminDashboardPage() {
                 <EmptyState
                   compact
                   icon="📅"
-                  title="אין תורים מאושרים לשבוע הקרוב"
+                  title="אין תורים להיום"
                   description="כשיתקבלו הזמנות מאושרות לימים הקרובים, הן יופיעו כאן."
                   action={{ label: "לדף ההזמנה", href: "/book" }}
                 />
@@ -209,7 +255,7 @@ export default function AdminDashboardPage() {
               <div className="mt-8 space-y-6">
                 {confirmedWeekGroups.map((group) => (
                   <div key={group.date}>
-                    <p className="mb-3 text-sm font-bold text-primary">
+                    <p className="mb-3 text-sm font-bold text-charcoal">
                       {group.label}
                     </p>
                     <ul className="space-y-3">
@@ -220,10 +266,10 @@ export default function AdminDashboardPage() {
                           data-testid={`dashboard-upcoming-${appointment.id}`}
                         >
                           <div>
-                            <p className="font-bold text-[#111827]">
+                            <p className="font-bold text-charcoal">
                               {appointment.customerName}
                             </p>
-                            <p className="text-sm text-primary">
+                            <p className="text-sm text-muted">
                               {getServiceName(services, appointment.serviceId)}
                             </p>
                           </div>
@@ -231,7 +277,7 @@ export default function AdminDashboardPage() {
                             <p className="ltr-value">
                               {formatTimeLabel(appointment.startTime)}
                             </p>
-                            <p className="mt-1 font-semibold text-[#111827]">
+                            <p className="mt-1 font-semibold text-charcoal">
                               {appointmentStatusLabels[appointment.status]}
                             </p>
                           </div>

@@ -7,6 +7,7 @@ import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
 import ImageUploadField from "@/components/ImageUploadField";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { HEBREW_WEEKDAYS } from "@/lib/appointment-edit";
 import {
@@ -21,10 +22,26 @@ import {
   uploadBusinessImage,
 } from "@/lib/supabase/storage";
 
+type BusinessSettingsTab =
+  | "details"
+  | "hours"
+  | "contact"
+  | "branding"
+  | "booking";
+
+const BUSINESS_TABS: { id: BusinessSettingsTab; label: string }[] = [
+  { id: "details", label: "פרטי העסק" },
+  { id: "hours", label: "שעות פעילות" },
+  { id: "contact", label: "קישורי קשר" },
+  { id: "branding", label: "מיתוג ותמונות" },
+  { id: "booking", label: "הגדרות הזמנה" },
+];
+
 export default function BusinessSettingsPage() {
   const { settings, isReady, usesDatabase, saveSettings } =
     useBusinessSettings();
 
+  const [activeTab, setActiveTab] = useState<BusinessSettingsTab>("details");
   const [businessName, setBusinessName] = useState("");
   const [description, setDescription] = useState("");
   const [phone, setPhone] = useState("");
@@ -33,7 +50,6 @@ export default function BusinessSettingsPage() {
   const [wazeUrl, setWazeUrl] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#171018");
   const [workingHours, setWorkingHours] = useState<BusinessWorkingDay[]>(
     createDefaultWorkingHours()
   );
@@ -77,7 +93,6 @@ export default function BusinessSettingsPage() {
     setWazeUrl(settings.wazeUrl ?? "");
     setEmail(settings.email ?? "");
     setAddress(settings.address ?? "");
-    setPrimaryColor(settings.primaryColor ?? "#171018");
     setWorkingHours(settings.workingHours);
     setBufferMinutes(settings.bufferMinutes);
     setBookingWindowDays(settings.bookingWindowDays ?? 30);
@@ -94,32 +109,64 @@ export default function BusinessSettingsPage() {
     );
   }
 
-  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function persistSettings(
+    payload: Parameters<typeof saveSettings>[0],
+    successMessage = "השינויים נשמרו בהצלחה"
+  ) {
     setIsSaving(true);
 
     try {
-      const result = await saveSettings({
-        phone: phone || null,
-        whatsappPhone: whatsappPhone || null,
-        locationUrl: locationUrl || null,
-        wazeUrl: wazeUrl || null,
-      });
+      const result = await saveSettings(payload);
 
       if (result.error) {
         showToast("error", "לא הצלחנו לשמור את השינויים");
-        return;
+        return false;
       }
 
-      showToast("success", "השינויים נשמרו בהצלחה");
+      showToast("success", successMessage);
+      return true;
     } catch {
       showToast("error", "לא הצלחנו לשמור את השינויים");
+      return false;
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleDetailsSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistSettings({
+      businessName,
+      description: description || null,
+      email: email || null,
+      address: address || null,
+    });
+  }
+
+  async function handleHoursSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistSettings({ workingHours });
+  }
+
+  async function handleBookingSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistSettings({
+      bufferMinutes,
+      bookingWindowDays: normalizeBookingWindowDays(bookingWindowDays),
+    });
+  }
+
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistSettings({
+      phone: phone || null,
+      whatsappPhone: whatsappPhone || null,
+      locationUrl: locationUrl || null,
+      wazeUrl: wazeUrl || null,
+    });
+  }
+
+  async function handleBrandingSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
 
@@ -141,19 +188,7 @@ export default function BusinessSettingsPage() {
         coverImageUrl = await uploadBusinessImage(coverFile, "cover");
       }
 
-      const result = await saveSettings({
-        businessName,
-        description: description || null,
-        phone: phone || null,
-        email: email || null,
-        address: address || null,
-        primaryColor: primaryColor || null,
-        logoUrl,
-        coverImageUrl,
-        workingHours,
-        bufferMinutes,
-        bookingWindowDays: normalizeBookingWindowDays(bookingWindowDays),
-      });
+      const result = await saveSettings({ logoUrl, coverImageUrl });
 
       if (result.error) {
         showToast("error", "לא הצלחנו לשמור את השינויים");
@@ -172,9 +207,12 @@ export default function BusinessSettingsPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <PageLoadingState label="טוען הגדרות עסק…" />
+      </>
     );
   }
 
@@ -207,275 +245,215 @@ export default function BusinessSettingsPage() {
       </div>
 
       <div className="page-container pb-12 sm:pb-16">
-        <div className="grid gap-10 lg:grid-cols-5">
-          <div className="space-y-8 lg:col-span-3">
-          <Card glass accent="primary" padding="lg">
-            <CardHeader
-              title="פרטים ומיתוג"
-              description="המידע יוצג בראש דף ההזמנה הציבורי."
-            />
+        <div className="mb-8">
+          <p className="section-eyebrow">הגדרות</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-charcoal sm:text-3xl">
+            פרטי העסק
+          </h1>
+          <p className="mt-2 text-sm text-muted sm:text-base">
+            ניהול פרטים, שעות פעילות, קשר ומיתוג לדף ההזמנה הציבורי.
+          </p>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="businessName"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  שם העסק
-                </label>
-                <input
-                  id="businessName"
-                  type="text"
-                  required
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className="input-field"
-                  placeholder="שם העסק שלכם"
-                />
-              </div>
+        <div
+          className="mb-6 flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="קטגוריות הגדרות"
+        >
+          {BUSINESS_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                activeTab === tab.id
+                  ? "bg-charcoal text-white shadow-sm"
+                  : "border border-black/10 bg-white text-charcoal hover:border-black/20"
+              }`}
+              data-testid={`business-tab-${tab.id}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-              <div>
-                <label
-                  htmlFor="description"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  תיאור קצר
-                </label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="input-field resize-none"
-                  placeholder="ספרו בקצרה על העסק..."
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  אימייל
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field ltr-value"
-                  placeholder="hello@business.com"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="address"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  כתובת
-                </label>
-                <input
-                  id="address"
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="input-field"
-                  placeholder="רחוב, עיר"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="primaryColor"
-                  className="mb-2.5 block text-sm font-bold text-[#111827]"
-                >
-                  צבע מותג
-                </label>
-                <div className="flex items-center gap-4">
+        <Card glass accent="primary" padding="lg">
+          {activeTab === "details" && (
+            <>
+              <CardHeader
+                title="פרטי העסק"
+                description="שם, תיאור ופרטי קשר בסיסיים שיוצגו ללקוחות."
+              />
+              <form onSubmit={handleDetailsSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="businessName" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    שם העסק
+                  </label>
                   <input
-                    id="primaryColor"
-                    type="color"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-12 w-16 cursor-pointer rounded-xl border border-primary/15 bg-white p-1"
-                  />
-                  <input
+                    id="businessName"
                     type="text"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="input-field ltr-value flex-1"
-                    placeholder="#171018"
+                    required
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className="input-field"
+                    placeholder="שם העסק שלכם"
                   />
                 </div>
-              </div>
+                <div>
+                  <label htmlFor="description" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    תיאור קצר
+                  </label>
+                  <textarea
+                    id="description"
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="input-field resize-none"
+                    placeholder="ספרו בקצרה על העסק..."
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    אימייל
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="hello@business.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="address" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    כתובת
+                  </label>
+                  <input
+                    id="address"
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="input-field"
+                    placeholder="רחוב, עיר"
+                  />
+                </div>
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? "שומר…" : "שמירת פרטי העסק"}
+                </Button>
+              </form>
+            </>
+          )}
 
-              <Button type="submit" size="lg" disabled={isSaving}>
-                {isSaving ? "שומר…" : "שמירת פרטי העסק"}
-              </Button>
-            </form>
-          </Card>
+          {activeTab === "hours" && (
+            <>
+              <CardHeader
+                title="שעות פעילות"
+                description="הגדירו שעות שונות לכל יום — משפיע על זמינות בדף ההזמנה."
+              />
+              <form
+                onSubmit={handleHoursSubmit}
+                className="space-y-6"
+                data-testid="working-hours-form"
+              >
+                <div className="space-y-3">
+                  {HEBREW_WEEKDAYS.map((day) => {
+                    const dayHours = workingHours.find(
+                      (item) => item.dayOfWeek === day.value
+                    );
+                    if (!dayHours) return null;
 
-          <Card glass accent="secondary" padding="lg">
-            <CardHeader
-              title="שעות פעילות לפי יום"
-              description="הגדירו שעות שונות לכל יום בשבוע — משפיע על זמינות בדף ההזמנה."
-            />
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-              data-testid="working-hours-form"
-            >
-              <div className="space-y-3">
-                {HEBREW_WEEKDAYS.map((day) => {
-                  const dayHours = workingHours.find(
-                    (item) => item.dayOfWeek === day.value
-                  );
-                  if (!dayHours) {
-                    return null;
-                  }
-
-                  return (
-                    <div
-                      key={day.value}
-                      className="rounded-2xl border border-primary/10 bg-white/80 p-4"
-                      data-testid={`working-day-row-${day.value}`}
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateDayHours(day.value, {
-                                isOpen: !dayHours.isOpen,
-                              })
-                            }
-                            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
-                              dayHours.isOpen
-                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                                : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
-                            }`}
-                            data-testid={`working-day-toggle-${day.value}`}
-                          >
-                            {dayHours.isOpen ? "פתוח" : "סגור"}
-                          </button>
-                          <span className="text-base font-bold text-[#1F2937]">
-                            {day.label}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-                          <div>
-                            <label className="mb-1 block text-xs font-semibold text-muted">
-                              התחלה
-                            </label>
-                            <input
-                              type="time"
-                              value={dayHours.startHour}
-                              disabled={!dayHours.isOpen}
-                              onChange={(e) =>
+                    return (
+                      <div
+                        key={day.value}
+                        className="rounded-2xl border border-black/10 bg-white p-4"
+                        data-testid={`working-day-row-${day.value}`}
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
                                 updateDayHours(day.value, {
-                                  startHour: e.target.value,
+                                  isOpen: !dayHours.isOpen,
                                 })
                               }
-                              className="input-field ltr-value"
-                              data-testid={`working-day-start-${day.value}`}
-                            />
+                              className={`rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                                dayHours.isOpen
+                                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                  : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
+                              }`}
+                              data-testid={`working-day-toggle-${day.value}`}
+                            >
+                              {dayHours.isOpen ? "פתוח" : "סגור"}
+                            </button>
+                            <span className="text-base font-bold text-charcoal">
+                              {day.label}
+                            </span>
                           </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-semibold text-muted">
-                              סיום
-                            </label>
-                            <input
-                              type="time"
-                              value={dayHours.endHour}
-                              disabled={!dayHours.isOpen}
-                              onChange={(e) =>
-                                updateDayHours(day.value, {
-                                  endHour: e.target.value,
-                                })
-                              }
-                              className="input-field ltr-value"
-                              data-testid={`working-day-end-${day.value}`}
-                            />
+                          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
+                            <div>
+                              <label className="mb-1 block text-xs font-semibold text-muted">
+                                התחלה
+                              </label>
+                              <input
+                                type="time"
+                                value={dayHours.startHour}
+                                disabled={!dayHours.isOpen}
+                                onChange={(e) =>
+                                  updateDayHours(day.value, {
+                                    startHour: e.target.value,
+                                  })
+                                }
+                                className="input-field ltr-value"
+                                data-testid={`working-day-start-${day.value}`}
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-semibold text-muted">
+                                סיום
+                              </label>
+                              <input
+                                type="time"
+                                value={dayHours.endHour}
+                                disabled={!dayHours.isOpen}
+                                onChange={(e) =>
+                                  updateDayHours(day.value, {
+                                    endHour: e.target.value,
+                                  })
+                                }
+                                className="input-field ltr-value"
+                                data-testid={`working-day-end-${day.value}`}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? "שומר…" : "שמירת שעות פעילות"}
+                </Button>
+              </form>
+            </>
+          )}
 
-              <div className="max-w-xs">
-                <label
-                  htmlFor="bufferMinutes"
-                  className="mb-2.5 block text-sm font-bold text-[#1F2937]"
-                >
-                  מרווח בין תורים בדקות
-                </label>
-                <input
-                  id="bufferMinutes"
-                  type="number"
-                  min={0}
-                  step={5}
-                  value={bufferMinutes}
-                  onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                  className="input-field ltr-value"
-                  data-testid="buffer-minutes-input"
-                  required
-                />
-              </div>
-
-              <div className="max-w-xs">
-                <label
-                  htmlFor="bookingWindowDays"
-                  className="mb-2.5 block text-sm font-bold text-[#1F2937]"
-                >
-                  פתיחת הזמנות קדימה
-                </label>
-                <input
-                  id="bookingWindowDays"
-                  type="number"
-                  min={MIN_BOOKING_WINDOW_DAYS}
-                  max={MAX_BOOKING_WINDOW_DAYS}
-                  value={bookingWindowDays}
-                  onChange={(e) =>
-                    setBookingWindowDays(Number(e.target.value))
-                  }
-                  className="input-field ltr-value"
-                  data-testid="booking-window-days-input"
-                  required
-                />
-                <p className="mt-2 text-xs text-muted">
-                  מספר הימים קדימה שבהם לקוחות יכולות לקבוע תור
-                </p>
-              </div>
-
-              <Button type="submit" size="lg" disabled={isSaving}>
-                {isSaving ? "שומר…" : "שמירת שעות פעילות"}
-              </Button>
-            </form>
-          </Card>
-          </div>
-
-          <div className="space-y-6 lg:col-span-2">
-            <Card glass accent="primary" padding="lg">
+          {activeTab === "contact" && (
+            <>
               <CardHeader
-                title="כפתורי יצירת קשר"
+                title="קישורי קשר"
                 description="הכפתורים יוצגו ללקוחות רק אם הוגדרו פרטים מתאימים."
               />
-
               <form
                 onSubmit={handleContactSubmit}
                 className="space-y-5"
                 data-testid="contact-links-form"
               >
                 <div>
-                  <label
-                    htmlFor="contactPhone"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="contactPhone" className="mb-2.5 block text-sm font-bold text-charcoal">
                     טלפון להתקשרות
                   </label>
                   <input
@@ -488,12 +466,8 @@ export default function BusinessSettingsPage() {
                     data-testid="contact-phone-input"
                   />
                 </div>
-
                 <div>
-                  <label
-                    htmlFor="whatsappPhone"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="whatsappPhone" className="mb-2.5 block text-sm font-bold text-charcoal">
                     מספר WhatsApp
                   </label>
                   <input
@@ -506,12 +480,8 @@ export default function BusinessSettingsPage() {
                     data-testid="whatsapp-phone-input"
                   />
                 </div>
-
                 <div>
-                  <label
-                    htmlFor="locationUrl"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="locationUrl" className="mb-2.5 block text-sm font-bold text-charcoal">
                     קישור מיקום / Google Maps
                   </label>
                   <input
@@ -524,12 +494,8 @@ export default function BusinessSettingsPage() {
                     data-testid="location-url-input"
                   />
                 </div>
-
                 <div>
-                  <label
-                    htmlFor="wazeUrl"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="wazeUrl" className="mb-2.5 block text-sm font-bold text-charcoal">
                     קישור Waze
                   </label>
                   <input
@@ -542,19 +508,20 @@ export default function BusinessSettingsPage() {
                     data-testid="waze-url-input"
                   />
                 </div>
-
                 <Button type="submit" size="lg" disabled={isSaving}>
-                  {isSaving ? "שומר…" : "שמירת כפתורי יצירת קשר"}
+                  {isSaving ? "שומר…" : "שמירת קישורי קשר"}
                 </Button>
               </form>
-            </Card>
+            </>
+          )}
 
-            <Card glass accent="secondary" padding="lg">
+          {activeTab === "branding" && (
+            <>
               <CardHeader
-                title="תמונות מיתוג"
+                title="מיתוג ותמונות"
                 description="לוגו ותמונת כיסוי לדף ההזמנה."
               />
-              <div className="space-y-8">
+              <form onSubmit={handleBrandingSubmit} className="space-y-8">
                 <ImageUploadField
                   label="לוגו העסק"
                   hint="PNG או JPG, עד 5MB. מומלץ ריבוע."
@@ -570,10 +537,64 @@ export default function BusinessSettingsPage() {
                   onFileSelect={setCoverFile}
                   disabled={isSaving}
                 />
-              </div>
-            </Card>
-          </div>
-        </div>
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? "שומר…" : "שמירת תמונות"}
+                </Button>
+              </form>
+            </>
+          )}
+
+          {activeTab === "booking" && (
+            <>
+              <CardHeader
+                title="הגדרות הזמנה"
+                description="מרווח בין תורים וטווח ההזמנה הקדימה ללקוחות."
+              />
+              <form onSubmit={handleBookingSubmit} className="space-y-6">
+                <div className="max-w-xs">
+                  <label htmlFor="bufferMinutes" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    מרווח בין תורים בדקות
+                  </label>
+                  <input
+                    id="bufferMinutes"
+                    type="number"
+                    min={0}
+                    step={5}
+                    value={bufferMinutes}
+                    onChange={(e) => setBufferMinutes(Number(e.target.value))}
+                    className="input-field ltr-value"
+                    data-testid="buffer-minutes-input"
+                    required
+                  />
+                </div>
+                <div className="max-w-xs">
+                  <label htmlFor="bookingWindowDays" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    פתיחת הזמנות קדימה
+                  </label>
+                  <input
+                    id="bookingWindowDays"
+                    type="number"
+                    min={MIN_BOOKING_WINDOW_DAYS}
+                    max={MAX_BOOKING_WINDOW_DAYS}
+                    value={bookingWindowDays}
+                    onChange={(e) =>
+                      setBookingWindowDays(Number(e.target.value))
+                    }
+                    className="input-field ltr-value"
+                    data-testid="booking-window-days-input"
+                    required
+                  />
+                  <p className="mt-2 text-xs text-muted">
+                    מספר הימים קדימה שבהם לקוחות יכולות לקבוע תור
+                  </p>
+                </div>
+                <Button type="submit" size="lg" disabled={isSaving}>
+                  {isSaving ? "שומר…" : "שמירת הגדרות הזמנה"}
+                </Button>
+              </form>
+            </>
+          )}
+        </Card>
       </div>
     </>
   );

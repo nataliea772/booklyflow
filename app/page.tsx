@@ -1,5 +1,6 @@
 "use client";
 
+import FeaturedServices from "@/components/FeaturedServices";
 import CustomerReviews from "@/components/CustomerReviews";
 import BoutiqueHero from "@/components/BoutiqueHero";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
@@ -22,12 +23,13 @@ export default function HomePage() {
     <>
       {loadError && (
         <div className="page-container pt-4">
-          <p className="rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center text-sm text-amber-900">
+          <p className="content-panel border-amber-200/80 bg-amber-50/95 px-4 py-3 text-center text-sm text-amber-900">
             לא ניתן לטעון את פרטי העסק כרגע. מוצגים ערכי ברירת מחדל.
           </p>
         </div>
       )}
       <BoutiqueHero settings={displaySettings} />
+      <FeaturedServices />
       <CustomerReviews />
     </>
   );

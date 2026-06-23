@@ -7,6 +7,7 @@ import BusinessBrandingHeader from "@/components/BusinessBrandingHeader";
 import CustomerReviews from "@/components/CustomerReviews";
 import Button from "@/components/Button";
 import EmptyState from "@/components/EmptyState";
+import { FormSkeleton } from "@/components/LoadingSkeleton";
 import ServiceSelectCards from "@/components/ServiceSelectCards";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useBlockedTimes } from "@/hooks/useBlockedTimes";
@@ -152,9 +153,18 @@ export default function BookPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container py-10 sm:py-16">
+          <div className="mx-auto max-w-3xl">
+            <div className="boutique-form-card p-8 sm:p-10">
+              <p className="mb-6 text-center text-sm font-semibold text-muted">
+                טוען שירותים וזמינות…
+              </p>
+              <FormSkeleton />
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -180,12 +190,13 @@ export default function BookPage() {
 
       <div className="page-container pb-28 pt-2 sm:pb-12 sm:pt-4">
         <div className="mx-auto max-w-2xl">
-          <div className="boutique-card p-5 sm:p-8">
-            <div className="mb-6 border-b border-[#f9a8d4]/20 pb-6">
+          <div className="boutique-form-card p-5 sm:p-8">
+            <div className="mb-6 border-b border-black/10 pb-6">
               <h2 className="text-xl font-extrabold text-charcoal sm:text-2xl">
                 השלימו את ההזמנה
               </h2>
-              <p className="mt-1 text-sm text-muted">
+              <div className="boutique-title-rule" aria-hidden="true" />
+              <p className="mt-2 text-sm text-muted">
                 שלושה צעדים קצרים — וסיימתם.
               </p>
             </div>
@@ -240,7 +251,7 @@ export default function BookPage() {
                 <p className="text-xs text-[#6B7280]">{hoursHint}</p>
 
                 {!serviceId || !appointmentDate ? (
-                  <p className="rounded-2xl border border-dashed border-[#F9A8D4]/30 px-4 py-5 text-center text-sm text-[#6B7280]">
+                  <p className="rounded-2xl border border-dashed border-black/15 px-4 py-5 text-center text-sm text-muted">
                     בחרו שירות ותאריך כדי לראות שעות פנויות.
                   </p>
                 ) : isBeyondBookingWindow ? (
@@ -259,7 +270,7 @@ export default function BookPage() {
                     התאריך שנבחר אינו זמין להזמנות
                   </p>
                 ) : availableSlots.length === 0 ? (
-                  <p className="rounded-2xl border border-[#f9a8d4]/30 bg-[#fff1f7]/60 px-4 py-6 text-center text-sm font-medium text-charcoal">
+                  <p className="rounded-2xl border border-black/10 bg-neutral-50 px-4 py-6 text-center text-sm font-medium text-charcoal">
                     אין שעות פנויות בתאריך שנבחר
                   </p>
                 ) : (
@@ -347,7 +358,7 @@ export default function BookPage() {
                 </div>
               </section>
 
-              <div className="sticky bottom-0 -mx-6 border-t border-rose/10 bg-[#fffafc]/95 px-6 py-4 backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4">
+              <div className="sticky bottom-0 -mx-6 border-t border-black/10 bg-white/95 px-6 py-4 backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4">
                 <Button
                   type="submit"
                   size="xl"

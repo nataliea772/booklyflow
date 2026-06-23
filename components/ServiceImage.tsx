@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { getPlaceholderGradient } from "@/lib/branding";
 
 type ServiceImageProps = {
   name: string;
@@ -18,16 +17,13 @@ const sizeClasses = {
 export default function ServiceImage({
   name,
   imageUrl,
-  seed,
   className = "",
   size = "md",
 }: ServiceImageProps) {
-  const gradient = getPlaceholderGradient(seed);
-
   if (imageUrl) {
     return (
       <div
-        className={`relative overflow-hidden ring-1 ring-primary/10 ${sizeClasses[size]} ${className}`}
+        className={`relative overflow-hidden ring-1 ring-black/10 ${sizeClasses[size]} ${className}`}
       >
         <Image
           src={imageUrl}
@@ -43,7 +39,7 @@ export default function ServiceImage({
 
   return (
     <div
-      className={`flex items-center justify-center bg-gradient-to-bl ${gradient} font-bold text-white shadow-md shadow-primary/20 ring-1 ring-white/30 ${sizeClasses[size]} ${className}`}
+      className={`flex items-center justify-center bg-charcoal font-bold text-white shadow-md shadow-black/10 ring-1 ring-black/10 ${sizeClasses[size]} ${className}`}
       aria-hidden="true"
     >
       {name.charAt(0)}

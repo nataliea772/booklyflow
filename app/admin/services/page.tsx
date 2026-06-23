@@ -1,12 +1,13 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import AdminNav from "@/components/AdminNav";
 import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
 import ImageUploadField from "@/components/ImageUploadField";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
 import ServiceImage from "@/components/ServiceImage";
 import {
   SERVICE_DELETE_FAILED_MESSAGE,
@@ -14,6 +15,11 @@ import {
   useServices,
 } from "@/hooks/useServices";
 import { formatPrice } from "@/lib/i18n";
+import {
+  filterAndSortServices,
+  type ServiceActiveFilter,
+  type ServiceSortOption,
+} from "@/lib/service-filters";
 import { formatDurationHebrew } from "@/lib/time-format";
 import type { Service } from "@/lib/types";
 
@@ -25,6 +31,18 @@ const SERVICE_CREATE_ERROR =
   "לא הצלחנו להוסיף את השירות. ודאי שאת מחוברת כמנהל ונסי שוב.";
 const SERVICE_DELETE_CONFIRM =
   "האם למחוק את השירות? פעולה זו לא ניתנת לשחזור.";
+
+const ACTIVE_FILTER_OPTIONS: { value: ServiceActiveFilter; label: string }[] = [
+  { value: "all", label: "הכל" },
+  { value: "active", label: "פעילים" },
+  { value: "inactive", label: "לא פעילים" },
+];
+
+const SORT_OPTIONS: { value: ServiceSortOption; label: string }[] = [
+  { value: "newest", label: "חדש ביותר" },
+  { value: "price", label: "מחיר" },
+  { value: "duration", label: "משך" },
+];
 
 export default function ServicesPage() {
   const {
@@ -45,6 +63,19 @@ export default function ServicesPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ServiceActiveFilter>("all");
+  const [sortBy, setSortBy] = useState<ServiceSortOption>("newest");
+
+  const filteredServices = useMemo(
+    () =>
+      filterAndSortServices(services, {
+        searchQuery,
+        activeFilter,
+        sortBy,
+      }),
+    [services, searchQuery, activeFilter, sortBy]
+  );
 
   const activeCount = services.filter((service) => service.isActive).length;
 
@@ -145,9 +176,12 @@ export default function ServicesPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <PageLoadingState label="טוען שירותים…" />
+      </>
     );
   }
 
@@ -169,8 +203,8 @@ export default function ServicesPage() {
             {services.length === 0 ? (
               <EmptyState
                 icon="✨"
-                title="עדיין לא הוגדרו שירותים"
-                description="הוסיפו את השירות הראשון שלכם כדי לאפשר ללקוחות להזמין תורים אונליין."
+                title="עדיין אין שירותים"
+                description="הוסיפי שירות ראשון כדי שלקוחות יוכלו להזמין תור."
               />
             ) : (
               <Card glass accent="primary" padding="lg">
@@ -182,92 +216,170 @@ export default function ServicesPage() {
                   }
                 />
 
-                <div className="space-y-4">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className={`list-card ${!service.isActive ? "opacity-75" : ""}`}
-                      data-testid={`service-row-${service.id}`}
+                <div
+                  className="mb-6 grid gap-4 rounded-2xl border border-black/10 bg-white p-4 sm:grid-cols-2"
+                  data-testid="services-filter-panel"
+                >
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="service-search"
+                      className="mb-2 block text-sm font-bold text-charcoal"
                     >
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="flex items-start gap-4">
-                            <ServiceImage
-                              name={service.name}
-                              imageUrl={service.imageUrl}
-                              seed={service.id}
-                              size="sm"
-                            />
-                            <div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-lg font-bold text-[#111827]">
-                                  {service.name}
+                      חיפוש
+                    </label>
+                    <input
+                      id="service-search"
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="חיפוש לפי שם שירות"
+                      className="input-field"
+                      data-testid="service-search-input"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="service-active-filter"
+                      className="mb-2 block text-sm font-bold text-charcoal"
+                    >
+                      סינון
+                    </label>
+                    <select
+                      id="service-active-filter"
+                      value={activeFilter}
+                      onChange={(e) =>
+                        setActiveFilter(e.target.value as ServiceActiveFilter)
+                      }
+                      className="input-field"
+                      data-testid="service-active-filter"
+                    >
+                      {ACTIVE_FILTER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="service-sort"
+                      className="mb-2 block text-sm font-bold text-charcoal"
+                    >
+                      מיון
+                    </label>
+                    <select
+                      id="service-sort"
+                      value={sortBy}
+                      onChange={(e) =>
+                        setSortBy(e.target.value as ServiceSortOption)
+                      }
+                      className="input-field"
+                      data-testid="service-sort-select"
+                    >
+                      {SORT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {filteredServices.length === 0 ? (
+                  <EmptyState
+                    compact
+                    icon="🔍"
+                    title="אין שירותים שתואמים לחיפוש"
+                    description="נסו לשנות את מילות החיפוש או את הסינון."
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {filteredServices.map((service) => (
+                      <div
+                        key={service.id}
+                        className={`list-card ${!service.isActive ? "opacity-75" : ""}`}
+                        data-testid={`service-row-${service.id}`}
+                      >
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex items-start gap-4">
+                              <ServiceImage
+                                name={service.name}
+                                imageUrl={service.imageUrl}
+                                seed={service.id}
+                                size="sm"
+                              />
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-lg font-bold text-charcoal">
+                                    {service.name}
+                                  </p>
+                                  <span
+                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                      service.isActive
+                                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                        : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
+                                    }`}
+                                    data-testid={`service-status-${service.id}`}
+                                  >
+                                    {service.isActive ? "פעיל" : "לא פעיל"}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm leading-relaxed text-muted">
+                                  {service.description}
                                 </p>
-                                <span
-                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                    service.isActive
-                                      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                                      : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
-                                  }`}
-                                  data-testid={`service-status-${service.id}`}
-                                >
-                                  {service.isActive ? "פעיל" : "לא פעיל"}
-                                </span>
                               </div>
-                              <p className="mt-1 text-sm leading-relaxed text-muted">
-                                {service.description}
-                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
+                              <span className="inline-flex rounded-xl bg-neutral-100 px-4 py-1.5 text-sm font-semibold text-charcoal ring-1 ring-black/8">
+                                {formatDurationHebrew(service.durationMinutes)}
+                              </span>
+                              <span className="text-xl font-bold text-charcoal">
+                                {formatPrice(service.price)}
+                              </span>
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
-                            <span className="inline-flex rounded-xl bg-primary-soft px-4 py-1.5 text-sm font-semibold text-primary ring-1 ring-primary/10">
-                              {formatDurationHebrew(service.durationMinutes)}
-                            </span>
-                            <span className="text-xl font-bold text-[#111827]">
-                              {formatPrice(service.price)}
-                            </span>
+
+                          <div className="flex flex-wrap gap-2 border-t border-black/8 pt-4">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEdit(service)}
+                              data-testid={`service-edit-${service.id}`}
+                            >
+                              עריכה
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={togglingId === service.id}
+                              onClick={() => handleToggleActive(service)}
+                              data-testid={`service-toggle-${service.id}`}
+                            >
+                              {togglingId === service.id
+                                ? "מעדכן…"
+                                : service.isActive
+                                  ? "השבתה"
+                                  : "הפעלה מחדש"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              disabled={deletingId === service.id}
+                              onClick={() => handleDelete(service)}
+                              data-testid={`service-delete-${service.id}`}
+                            >
+                              {deletingId === service.id ? "מוחק…" : "מחיקה"}
+                            </Button>
                           </div>
                         </div>
-
-                        <div className="flex flex-wrap gap-2 border-t border-primary/8 pt-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => startEdit(service)}
-                            data-testid={`service-edit-${service.id}`}
-                          >
-                            עריכה
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={togglingId === service.id}
-                            onClick={() => handleToggleActive(service)}
-                            data-testid={`service-toggle-${service.id}`}
-                          >
-                            {togglingId === service.id
-                              ? "מעדכן…"
-                              : service.isActive
-                                ? "השבתה"
-                                : "הפעלה מחדש"}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size="sm"
-                            disabled={deletingId === service.id}
-                            onClick={() => handleDelete(service)}
-                            data-testid={`service-delete-${service.id}`}
-                          >
-                            {deletingId === service.id ? "מוחק…" : "מחיקה"}
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             )}
           </div>
@@ -308,10 +420,7 @@ export default function ServicesPage() {
                 className="space-y-6"
               >
                 <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="name" className="mb-2.5 block text-sm font-bold text-charcoal">
                     שם השירות
                   </label>
                   <input
@@ -326,10 +435,7 @@ export default function ServicesPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="description"
-                    className="mb-2.5 block text-sm font-bold text-[#111827]"
-                  >
+                  <label htmlFor="description" className="mb-2.5 block text-sm font-bold text-charcoal">
                     תיאור
                   </label>
                   <textarea
@@ -345,10 +451,7 @@ export default function ServicesPage() {
 
                 <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <label
-                      htmlFor="duration"
-                      className="mb-2.5 block text-sm font-bold text-[#111827]"
-                    >
+                    <label htmlFor="duration" className="mb-2.5 block text-sm font-bold text-charcoal">
                       משך (דק׳)
                     </label>
                     <input
@@ -364,10 +467,7 @@ export default function ServicesPage() {
                     />
                   </div>
                   <div>
-                    <label
-                      htmlFor="price"
-                      className="mb-2.5 block text-sm font-bold text-[#111827]"
-                    >
+                    <label htmlFor="price" className="mb-2.5 block text-sm font-bold text-charcoal">
                       מחיר (₪)
                     </label>
                     <input

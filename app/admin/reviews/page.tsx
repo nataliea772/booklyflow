@@ -6,6 +6,7 @@ import Badge from "@/components/Badge";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useReviews } from "@/hooks/useReviews";
 import { useServices } from "@/hooks/useServices";
@@ -61,9 +62,12 @@ export default function ReviewsPage() {
 
   if (!isReady) {
     return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
+      <>
+        <div className="page-container pt-4 sm:pt-6">
+          <AdminNav />
+        </div>
+        <PageLoadingState label="טוען ביקורות…" />
+      </>
     );
   }
 
@@ -114,7 +118,7 @@ export default function ReviewsPage() {
             <EmptyState
               icon="⭐"
               title="אין ביקורות עדיין"
-              description="כשלקוחות ישלימו תור וישאירו ביקורת, היא תופיע כאן."
+              description="ביקורות יופיעו לאחר שלקוחות ישאירו דירוג."
             />
           ) : (
             <div className="space-y-4">
@@ -141,7 +145,7 @@ export default function ReviewsPage() {
                             <Badge variant="neutral">מוסתר</Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-rose">
+                        <p className="mt-1 text-sm text-charcoal">
                           {formatStarRating(review.rating)}
                         </p>
                         {review.comment && (

@@ -3,6 +3,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/Button";
+import { PageLoadingState } from "@/components/LoadingSkeleton";
+import { validateReviewRating } from "@/lib/review-validation";
 import { formatStarRating } from "@/lib/reviews-display";
 import { getPublicAppointmentById } from "@/lib/supabase/appointments";
 import { getReviewByAppointmentId } from "@/lib/supabase/reviews";
@@ -23,10 +25,11 @@ export default function CustomerReviewPage() {
   const [pageState, setPageState] = useState<ReviewPageState>("loading");
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [customerName, setCustomerName] = useState("");
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +86,10 @@ export default function CustomerReviewPage() {
     };
   }, [appointmentId]);
 
-  const ratingPreview = useMemo(() => formatStarRating(rating), [rating]);
+  const ratingPreview = useMemo(
+    () => (rating ? formatStarRating(rating) : "☆☆☆☆☆"),
+    [rating]
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,7 +97,14 @@ export default function CustomerReviewPage() {
       return;
     }
 
+    const validationError = validateReviewRating(rating);
+    if (validationError) {
+      setRatingError(validationError);
+      return;
+    }
+
     setSubmitError(null);
+    setRatingError(null);
     setIsSubmitting(true);
 
     try {
@@ -130,17 +143,13 @@ export default function CustomerReviewPage() {
   }
 
   if (pageState === "loading") {
-    return (
-      <div className="page-container flex min-h-[50vh] items-center justify-center py-20">
-        <div className="loader-premium" role="status" aria-label="טוען" />
-      </div>
-    );
+    return <PageLoadingState label="טוען ביקורת…" />;
   }
 
   return (
     <div className="page-container py-10 sm:py-16">
       <div className="mx-auto max-w-lg">
-        <div className="boutique-card p-8 text-center sm:p-10">
+        <div className="boutique-hero-card p-8 text-center sm:p-10">
           {pageState === "not_found" && (
             <>
               <h1
@@ -174,8 +183,14 @@ export default function CustomerReviewPage() {
 
           {pageState === "already_reviewed" && (
             <>
+              <span
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-50 text-3xl ring-2 ring-black/10"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
               <h1
-                className="text-2xl font-extrabold text-charcoal"
+                className="mt-6 text-2xl font-extrabold text-charcoal"
                 data-testid="review-error-message"
               >
                 כבר התקבלה ביקורת עבור התור הזה
@@ -189,7 +204,7 @@ export default function CustomerReviewPage() {
           {pageState === "thank_you" && (
             <>
               <span
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-bl from-[#fff1f7] to-[#fce7f3] text-3xl ring-2 ring-[#f9a8d4]/35"
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-50 text-3xl ring-2 ring-black/10"
                 aria-hidden="true"
               >
                 ✨
@@ -201,8 +216,16 @@ export default function CustomerReviewPage() {
                 תודה על הביקורת שלך
               </h1>
               <p className="mt-3 text-sm text-muted">
-                המילים שלך עוזרות לנו להמשיך לשפר את החוויה.
+                נשמח לראות אותך שוב
               </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Button href="/book" size="lg" data-testid="review-book-again-button">
+                  הזמנת תור נוסף
+                </Button>
+                <Button href="/" variant="outline" size="lg">
+                  חזרה לדף הבית
+                </Button>
+              </div>
             </>
           )}
 
@@ -241,24 +264,39 @@ export default function CustomerReviewPage() {
                 <div>
                   <label
                     htmlFor="reviewRating"
-                    className="mb-2 block text-sm font-bold text-[#111827]"
+                    className="mb-2 block text-sm font-bold text-charcoal"
                   >
                     דירוג
                   </label>
                   <select
                     id="reviewRating"
-                    value={rating}
-                    onChange={(event) => setRating(Number(event.target.value))}
+                    value={rating ?? ""}
+                    onChange={(event) => {
+                      const nextValue = event.target.value
+                        ? Number(event.target.value)
+                        : null;
+                      setRating(nextValue);
+                      setRatingError(null);
+                    }}
                     className="input-field"
                     data-testid="review-rating-select"
                   >
+                    <option value="">בחרי דירוג</option>
                     {[5, 4, 3, 2, 1].map((value) => (
                       <option key={value} value={value}>
                         {value} — {formatStarRating(value)}
                       </option>
                     ))}
                   </select>
-                  <p className="mt-2 text-sm text-rose">{ratingPreview}</p>
+                  {ratingError && (
+                    <p
+                      className="mt-2 text-sm font-medium text-red-700"
+                      data-testid="review-rating-error"
+                    >
+                      {ratingError}
+                    </p>
+                  )}
+                  <p className="mt-2 text-sm text-charcoal">{ratingPreview}</p>
                 </div>
 
                 <div>
@@ -300,8 +338,7 @@ export default function CustomerReviewPage() {
 
           {(pageState === "not_found" ||
             pageState === "not_completed" ||
-            pageState === "already_reviewed" ||
-            pageState === "thank_you") && (
+            pageState === "already_reviewed") && (
             <div className="mt-8">
               <Button href="/" variant="outline" size="lg">
                 חזרה לדף הבית

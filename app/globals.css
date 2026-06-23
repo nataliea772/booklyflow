@@ -1,57 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --charcoal: #171018;
-  --charcoal-deep: #111014;
-  --plum: #2a1026;
-  --rose: #db2777;
-  --rose-bright: #ec4899;
-  --pink-soft: #f9a8d4;
-  --blush: #fff1f7;
-  --champagne: #fffafc;
-  --background: #fff1f7;
-  --foreground: #171018;
-  --cream: #fffafc;
-  --primary: #171018;
-  --primary-deep: #111014;
-  --primary-bright: #2a1026;
-  --secondary: #f9a8d4;
-  --muted: #5c4f56;
+  --charcoal: #111111;
+  --charcoal-deep: #0a0a0a;
+  --ink: #171717;
+  --off-white: #fafafa;
+  --cream: #ffffff;
+  --champagne: #fefefe;
+  --background: #fafafa;
+  --foreground: #111111;
+  --primary: #111111;
+  --primary-deep: #0a0a0a;
+  --primary-bright: #262626;
+  --secondary: #737373;
+  --muted: #525252;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --border: rgba(219, 39, 119, 0.12);
-  --card-shadow: 0 2px 16px rgba(17, 16, 20, 0.04),
-    0 12px 40px rgba(219, 39, 119, 0.08);
-  --card-shadow-lg: 0 8px 28px rgba(17, 16, 20, 0.06),
-    0 24px 56px rgba(219, 39, 119, 0.1);
-  --card-shadow-hover: 0 16px 44px rgba(17, 16, 20, 0.08),
-    0 32px 64px rgba(236, 72, 153, 0.16);
-  --glass-bg: rgba(255, 250, 252, 0.94);
+  --border: rgba(17, 17, 17, 0.1);
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --card-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.06), 0 16px 40px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.94);
   --glass-border: rgba(255, 255, 255, 0.98);
-  --ring-glow: 0 0 0 1px rgba(219, 39, 119, 0.25),
-    0 0 28px rgba(249, 168, 212, 0.4),
-    0 0 56px rgba(236, 72, 153, 0.15);
-  --boutique-gradient: linear-gradient(
-    135deg,
-    #111014 0%,
-    #2a1026 42%,
-    #db2777 78%,
-    #f9a8d4 100%
-  );
-  --cta-gradient: linear-gradient(
-    135deg,
-    #171018 0%,
-    #2a1026 35%,
-    #be185d 68%,
-    #ec4899 100%
-  );
-  --luxury-hero-gradient: linear-gradient(
-    145deg,
-    #111014 0%,
-    #2a1026 55%,
-    #4a1538 100%
-  );
+  --ring-glow: 0 0 0 1px rgba(17, 17, 17, 0.15), 0 0 0 4px rgba(17, 17, 17, 0.08);
+  --polka-dot: #111111;
+  --polka-size: 22px;
+  --polka-hero-size: 28px;
 }
 
 @theme inline {
@@ -59,29 +34,286 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
-  --color-rose: var(--rose);
   --color-charcoal: var(--charcoal);
-  --color-primary-light: #fce7f3;
-  --color-primary-soft: #fff1f7;
-  --color-secondary-light: #fce7f3;
+  --color-primary-light: #f5f5f5;
+  --color-primary-soft: #fafafa;
+  --color-secondary-light: #f5f5f5;
   --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(ellipse 85% 60% at 92% -5%, rgba(249, 168, 212, 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 5% 8%, rgba(42, 16, 38, 0.06), transparent 50%),
-    radial-gradient(ellipse 55% 40% at 50% 100%, rgba(236, 72, 153, 0.08), transparent 60%),
-    linear-gradient(180deg, #fff1f7 0%, #fffafc 45%, #fffafc 100%);
-  background-attachment: fixed;
+  background-color: #fffafc;
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   text-align: right;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Full-page polka backgrounds */
+.polka-page-bg {
+  background-color: #fffafc;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.34) 2px,
+    transparent 2.2px
+  );
+  background-size: 26px 26px;
+}
+
+.admin-polka-bg {
+  background-color: #fffafc;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.17) 1.8px,
+    transparent 2px
+  );
+  background-size: 26px 26px;
+}
+
+.content-panel {
+  @apply rounded-3xl border border-black/10 bg-white/95 shadow-sm backdrop-blur-sm;
+}
+
+.boutique-hero-card {
+  @apply relative overflow-hidden rounded-[2rem] border border-black/10 bg-white/95 shadow-[var(--card-shadow-lg)] backdrop-blur-sm;
+}
+
+.boutique-form-card {
+  @apply overflow-hidden rounded-[2rem] border border-black/10 bg-white shadow-[var(--card-shadow-lg)];
+}
+
+.featured-service-card {
+  @apply overflow-hidden rounded-[1.75rem] border border-black/10 bg-white/95 shadow-[var(--card-shadow)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)];
+}
+
+.boutique-dot-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.boutique-dot-divider span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: #111111;
+  opacity: 0.85;
+}
+
+.boutique-title-rule {
+  @apply mx-auto mt-3 h-px w-14 bg-charcoal/75;
+}
+
+/* Full-section fabric + polka (homepage hero) */
+.fabric-polka-hero-section {
+  position: relative;
+  overflow: hidden;
+  background-color: #fffafc;
+}
+
+.fabric-polka-hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(
+      ellipse 78% 58% at 68% 38%,
+      rgba(255, 255, 255, 0.42) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 70% 52% at 26% 62%,
+      rgba(245, 245, 245, 0.35) 0%,
+      transparent 64%
+    ),
+    repeating-conic-gradient(
+      from 20deg at 64% 42%,
+      rgba(0, 0, 0, 0.055) 0deg 7deg,
+      rgba(255, 255, 255, 0.12) 7deg 14deg
+    ),
+    radial-gradient(rgba(0, 0, 0, 0.44) 2.2px, transparent 2.45px);
+  background-size: auto, auto, auto, 30px 30px;
+  pointer-events: none;
+}
+
+.fabric-polka-hero-section-compact {
+  position: relative;
+  overflow: hidden;
+  background-color: #fffafc;
+}
+
+.fabric-polka-hero-section-compact::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(
+      ellipse 75% 55% at 70% 42%,
+      rgba(255, 255, 255, 0.38) 0%,
+      transparent 70%
+    ),
+    repeating-conic-gradient(
+      from 18deg at 60% 48%,
+      rgba(0, 0, 0, 0.04) 0deg 8deg,
+      rgba(255, 255, 255, 0.1) 8deg 16deg
+    ),
+    radial-gradient(rgba(0, 0, 0, 0.38) 2px, transparent 2.2px);
+  background-size: auto, auto, 28px 28px;
+  pointer-events: none;
+}
+
+/* Fabric swirl + polka strip (legacy / cover bands) */
+.fabric-polka-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: #fffafc;
+  background-image:
+    radial-gradient(
+      ellipse 75% 55% at 72% 38%,
+      rgba(255, 255, 255, 0.35) 0%,
+      transparent 68%
+    ),
+    repeating-conic-gradient(
+      from 22deg at 66% 42%,
+      rgba(0, 0, 0, 0.05) 0deg 7deg,
+      rgba(255, 255, 255, 0.12) 7deg 14deg
+    );
+}
+
+.fabric-polka-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.48) 2.2px,
+    transparent 2.45px
+  );
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+
+.fabric-polka-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.35) 55%,
+    rgba(255, 255, 255, 0.82) 100%
+  );
+  pointer-events: none;
+}
+
+.fabric-polka-hero-compact {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: #fffafc;
+  background-image: repeating-conic-gradient(
+    from 18deg at 62% 48%,
+    rgba(0, 0, 0, 0.04) 0deg 8deg,
+    rgba(255, 255, 255, 0.1) 8deg 16deg
+  );
+}
+
+.fabric-polka-hero-compact::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.4) 2px,
+    transparent 2.2px
+  );
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.fabric-polka-hero-compact::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.72) 100%
+  );
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .polka-page-bg {
+    background-size: 24px 24px;
+  }
+
+  .fabric-polka-hero-section::before {
+    background-size: auto, auto, auto, 26px 26px;
+  }
+
+  .fabric-polka-hero-section-compact::before {
+    background-size: auto, auto, 26px 26px;
+  }
+
+  .fabric-polka-hero::before {
+    background-size: 26px 26px;
+  }
+
+  .fabric-polka-hero-compact::before {
+    background-size: 24px 24px;
+  }
+}
+
+.hero-content-readable {
+  @apply relative z-[2] bg-white/95 backdrop-blur-sm;
+}
+
+/* Local polka dot accents (hero strips, etc.) */
+.polka-bg {
+  background-color: #ffffff;
+  background-image: radial-gradient(var(--polka-dot) 1.5px, transparent 1.5px);
+  background-size: var(--polka-size) var(--polka-size);
+}
+
+.polka-hero {
+  background-color: #fafafa;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.18) 2px,
+    transparent 2px
+  );
+  background-size: var(--polka-hero-size) var(--polka-hero-size);
+}
+
+.dot-accent {
+  position: relative;
+}
+
+.dot-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.12) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.boutique-section {
+  @apply relative bg-white;
 }
 
 .page-container {
@@ -93,7 +325,7 @@ body {
 }
 
 .section-eyebrow {
-  @apply text-xs font-bold uppercase tracking-[0.22em] text-rose;
+  @apply text-xs font-bold uppercase tracking-[0.22em] text-muted;
 }
 
 .display-hero {
@@ -111,8 +343,7 @@ body {
 }
 
 .input-field {
-  @apply w-full rounded-2xl border bg-[#fffafc] px-4 py-3.5 text-sm text-foreground shadow-sm transition-all duration-300 placeholder:text-muted/50 focus:border-rose/40 focus:outline-none focus:ring-4 focus:ring-[#f9a8d4]/25;
-  border-color: rgba(219, 39, 119, 0.12);
+  @apply w-full rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-sm text-foreground shadow-sm transition-all duration-300 placeholder:text-muted/50 focus:border-charcoal focus:outline-none focus:ring-4 focus:ring-black/15;
   text-align: right;
 }
 
@@ -126,44 +357,40 @@ body {
 }
 
 .badge-primary {
-  @apply bg-[#fce7f3] text-charcoal ring-1 ring-[#f9a8d4]/45;
+  @apply bg-neutral-100 text-charcoal ring-1 ring-black/10;
 }
 
 .badge-secondary {
-  @apply bg-[#fce7f3] text-[#9d174d] ring-1 ring-[#f9a8d4]/50;
+  @apply bg-neutral-50 text-charcoal ring-1 ring-black/10;
 }
 
 .glass-card {
-  @apply rounded-[2rem] border bg-white/90 shadow-[var(--card-shadow-lg)] backdrop-blur-xl;
-  border-color: rgba(219, 39, 119, 0.1);
+  @apply rounded-[2rem] border border-black/10 bg-white shadow-[var(--card-shadow-lg)];
 }
 
 .surface-premium {
-  @apply rounded-[2rem] border bg-[#fffafc]/95 shadow-[var(--card-shadow-lg)] backdrop-blur-xl;
-  border-color: rgba(219, 39, 119, 0.1);
+  @apply rounded-[2rem] border border-black/8 bg-white shadow-[var(--card-shadow-lg)] backdrop-blur-xl;
 }
 
 .boutique-card {
-  @apply overflow-hidden rounded-[2rem] border bg-[#fffafc] shadow-[var(--card-shadow-lg)];
-  border-color: rgba(219, 39, 119, 0.1);
+  @apply overflow-hidden rounded-[2rem] border border-black/10 bg-white/95 shadow-[var(--card-shadow-lg)] backdrop-blur-sm;
 }
 
 .boutique-hero-cover {
   @apply relative h-56 sm:h-72 md:h-80;
 }
 
-.luxury-hero-gradient {
-  background: var(--luxury-hero-gradient);
+.boutique-logo-float {
+  @apply relative mx-auto -mt-16 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-[5px] border-white bg-white shadow-[var(--card-shadow-lg)] sm:-mt-[4.5rem] sm:h-32 sm:w-32;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
-.boutique-logo-float {
-  @apply relative mx-auto -mt-16 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-[5px] border-[#fffafc] bg-[#fffafc] shadow-[var(--card-shadow-lg)] sm:-mt-[4.5rem] sm:h-32 sm:w-32;
-  box-shadow: 0 12px 40px rgba(219, 39, 119, 0.14), 0 0 0 1px rgba(249, 168, 212, 0.35);
+.boutique-button {
+  @apply inline-flex items-center justify-center rounded-2xl bg-charcoal px-8 py-4 text-base font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-black hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 active:translate-y-0;
 }
 
 .contact-chip {
-  @apply inline-flex items-center rounded-full border bg-white/95 px-4 py-2 text-sm font-medium text-charcoal shadow-sm;
-  border-color: rgba(249, 168, 212, 0.45);
+  @apply inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-charcoal shadow-sm;
 }
 
 .card-hover {
@@ -179,94 +406,70 @@ body {
   box-shadow: var(--card-shadow-lg);
 }
 
-.gradient-blob {
-  @apply pointer-events-none absolute rounded-full blur-3xl;
-}
-
-.mesh-grid {
-  background-image:
-    linear-gradient(rgba(219, 39, 119, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(219, 39, 119, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
+.cover-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.4) 45%,
+    transparent 100%
+  );
 }
 
 .list-card {
-  @apply rounded-2xl border bg-gradient-to-bl from-white to-[#fff1f7]/80 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5;
-  border-color: rgba(219, 39, 119, 0.1);
+  @apply rounded-2xl border border-black/10 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5;
   box-shadow: var(--card-shadow);
 }
 
 .page-header-bg {
-  @apply relative overflow-hidden border-b;
-  border-color: rgba(219, 39, 119, 0.1);
-  background: linear-gradient(180deg, #fff1f7 0%, #fffafc 100%);
+  @apply relative overflow-hidden border-b border-black/8 bg-white;
 }
 
 .text-gradient {
-  @apply bg-gradient-to-l from-charcoal via-rose to-[#ec4899] bg-clip-text text-transparent;
+  @apply text-charcoal;
 }
 
 .btn-gradient {
-  background: var(--cta-gradient);
-  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  @apply bg-charcoal text-white;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
 .btn-gradient:hover {
-  background: linear-gradient(135deg, #111014 0%, #2a1026 40%, #db2777 100%);
-  box-shadow: 0 12px 32px rgba(236, 72, 153, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  @apply bg-black;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .pill-slot {
-  @apply rounded-full border bg-[#fffafc] px-5 py-3 text-sm font-bold text-charcoal shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f9a8d4]/55 hover:shadow-md;
-  border-color: rgba(219, 39, 119, 0.14);
+  @apply rounded-full border border-black/15 bg-white px-5 py-3 text-sm font-bold text-charcoal shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-black/30 hover:shadow-md;
 }
 
 .pill-slot-selected {
-  @apply border-transparent text-white shadow-lg;
-  background: var(--cta-gradient);
-  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.35);
+  @apply border-transparent bg-charcoal text-white shadow-md;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
 .service-card-selected {
-  box-shadow: var(--ring-glow);
-  @apply border-rose/40 bg-gradient-to-b from-[#fff1f7] to-[#fffafc] ring-2 ring-[#f9a8d4]/35;
+  @apply scale-[1.01] border-charcoal bg-white ring-2 ring-black/20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), var(--ring-glow);
 }
 
 .hero-glow-ring {
-  box-shadow: var(--ring-glow);
+  box-shadow: var(--card-shadow-lg);
 }
 
 .loader-premium {
-  @apply h-11 w-11 animate-spin rounded-full border-[3px] border-[#f9a8d4]/35 border-t-rose;
+  @apply h-11 w-11 animate-spin rounded-full border-[3px] border-black/10 border-t-charcoal;
 }
 
 .empty-state-glow {
   background: radial-gradient(
     circle at center,
-    rgba(249, 168, 212, 0.28) 0%,
-    rgba(236, 72, 153, 0.1) 45%,
+    rgba(0, 0, 0, 0.04) 0%,
     transparent 72%
   );
 }
 
 .boutique-nav {
-  @apply border-b shadow-sm backdrop-blur-xl;
-  border-color: rgba(219, 39, 119, 0.15);
-  background: linear-gradient(
-    180deg,
-    rgba(23, 16, 24, 0.97) 0%,
-    rgba(42, 16, 38, 0.95) 100%
-  );
-}
-
-.cover-overlay {
-  background: linear-gradient(
-    to top,
-    rgba(17, 16, 20, 0.88) 0%,
-    rgba(42, 16, 38, 0.55) 40%,
-    rgba(219, 39, 119, 0.15) 100%
-  );
+  @apply sticky top-0 z-50 h-[76px] shrink-0 overflow-hidden border-b border-black/8 bg-white/95 shadow-sm backdrop-blur-xl;
 }
 
 .service-catalog-image {
@@ -277,17 +480,18 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(17, 16, 20, 0.2), transparent 55%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.12), transparent 55%);
   pointer-events: none;
 }
 
 .review-card-luxury {
-  @apply rounded-[1.5rem] border bg-gradient-to-b from-white to-[#fff1f7]/90 p-5 shadow-[var(--card-shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)];
-  border-color: rgba(219, 39, 119, 0.12);
+  @apply rounded-[1.5rem] border border-black/10 bg-white/95 p-5 shadow-[var(--card-shadow)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)];
 }
 
 .admin-shell {
-  @apply rounded-2xl border shadow-[var(--card-shadow-lg)] backdrop-blur-xl;
-  border-color: rgba(219, 39, 119, 0.12);
-  background: linear-gradient(180deg, #fffafc 0%, #fff1f7 100%);
+  @apply rounded-b-[1.75rem] border border-black/10 bg-white/95 shadow-sm backdrop-blur-sm;
+}
+
+.contact-icon-btn {
+  @apply inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-black/20 bg-white text-charcoal shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-charcoal hover:bg-charcoal hover:text-white hover:shadow-md active:scale-95 sm:h-[3rem] sm:w-[3rem];
 }
