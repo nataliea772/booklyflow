@@ -70,8 +70,7 @@ test.describe("BooklyFlow booking flow", () => {
     await page.goto("/admin");
     const weekBefore = Number(
       await page
-        .getByTestId("dashboard-stat-week")
-        .locator("p.text-4xl")
+        .getByTestId("dashboard-stat-week-value")
         .innerText()
     );
 
@@ -127,7 +126,7 @@ test.describe("BooklyFlow booking flow", () => {
     await expect(page.getByTestId("dashboard-stat-popular-service")).toBeVisible();
 
     const weekAfter = Number(
-      await page.getByTestId("dashboard-stat-week").locator("p.text-4xl").innerText()
+      await page.getByTestId("dashboard-stat-week-value").innerText()
     );
 
     expect(weekAfter).toBe(weekBefore + 1);

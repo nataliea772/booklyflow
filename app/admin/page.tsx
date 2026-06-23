@@ -106,13 +106,12 @@ export default function AdminDashboardPage() {
           </h1>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             label="תורים היום"
             value={stats.todayCount}
             icon="📅"
             trend="כל התורים שלא בוטלו"
-            variant="primary"
             testId="dashboard-stat-today"
           />
           <StatCard
@@ -120,7 +119,6 @@ export default function AdminDashboardPage() {
             value={stats.weekCount}
             icon="🗓️"
             trend="7 ימים קדימה"
-            variant="secondary"
             testId="dashboard-stat-week"
           />
           <StatCard
@@ -128,7 +126,6 @@ export default function AdminDashboardPage() {
             value={formatCurrency(stats.revenue)}
             icon="💰"
             trend="מתורים מאושרים להיום"
-            variant="emerald"
             testId="dashboard-stat-revenue"
           />
           <StatCard
@@ -140,7 +137,6 @@ export default function AdminDashboardPage() {
                 ? `${stats.popularCount} תורים`
                 : "אין נתונים עדיין"
             }
-            variant="primary"
             testId="dashboard-stat-popular-service"
           />
           <StatCard
@@ -150,7 +146,6 @@ export default function AdminDashboardPage() {
             }
             icon="⭐"
             trend="מביקורות גלויות"
-            variant="amber"
             testId="dashboard-stat-average-rating"
           />
           <StatCard
@@ -158,19 +153,18 @@ export default function AdminDashboardPage() {
             value={`${stats.cancellationRate}%`}
             icon="📉"
             trend="מכלל התורים"
-            variant="secondary"
             testId="dashboard-stat-cancellation-rate"
           />
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:gap-8">
-          <Card glass accent="primary" padding="lg">
+        <div className="mt-8 grid gap-6 lg:grid-cols-2 lg:gap-6">
+          <Card glass accent="none" padding="md">
             <p className="section-eyebrow">קיצורי דרך</p>
             <h2 className="mt-2 text-xl font-extrabold text-charcoal sm:text-2xl">
               פעולות מהירות
             </h2>
             <p className="mt-2 text-base text-muted">מעבר למשימות נפוצות</p>
-            <ul className="mt-8 space-y-3">
+            <ul className="mt-6 space-y-3">
               {[
                 {
                   href: "/admin/business",
@@ -200,10 +194,10 @@ export default function AdminDashboardPage() {
                 <li key={action.href}>
                   <Link
                     href={action.href}
-                    className="group flex items-center gap-4 rounded-2xl border border-black/8 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-black/15 hover:shadow-[var(--card-shadow)]"
+                    className="group flex items-center gap-4 rounded-2xl border border-black/10 bg-white p-4 transition-all duration-200 hover:border-black/20 hover:shadow-[var(--card-shadow)]"
                   >
                     <span
-                      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-50 text-xl shadow-sm ring-1 ring-black/10 transition-all duration-200 group-hover:bg-charcoal group-hover:text-white"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-charcoal text-lg text-white shadow-sm transition-colors duration-200 group-hover:bg-black"
                       aria-hidden="true"
                     >
                       {action.icon}
@@ -221,7 +215,7 @@ export default function AdminDashboardPage() {
             </ul>
           </Card>
 
-          <Card glass accent="secondary" padding="lg">
+          <Card glass accent="none" padding="md">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-eyebrow">פעילות</p>
@@ -235,7 +229,7 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
               {confirmedWeekAppointments.length > 0 && (
-                <Badge variant="secondary">
+                <Badge variant="neutral">
                   {confirmedWeekAppointments.length} תורים
                 </Badge>
               )}

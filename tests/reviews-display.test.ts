@@ -53,3 +53,16 @@ describe("pickPublicReviews", () => {
     ).toBe(false);
   });
 });
+
+describe("public average rating", () => {
+  it("uses only visible reviews passed from pickPublicReviews flow", async () => {
+    const { calculateAverageRating } = await import("@/lib/review-stats");
+    const reviews = pickPublicReviews([
+      createReview({ id: "1", rating: 5 }),
+      createReview({ id: "2", rating: 3, isVisible: false }),
+      createReview({ id: "3", rating: 4, createdAt: "2026-06-23T10:00:00.000Z" }),
+    ]);
+
+    expect(calculateAverageRating(reviews)).toBe(4.5);
+  });
+});

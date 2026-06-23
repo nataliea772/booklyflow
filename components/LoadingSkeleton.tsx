@@ -40,9 +40,9 @@ export function PageLoadingState({ label = "טוען…" }: { label?: string }) 
 
 export function DashboardStatsSkeleton() {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
       {Array.from({ length: 6 }).map((_, index) => (
-        <SkeletonBlock key={index} className="h-36 w-full" />
+        <SkeletonBlock key={index} className="min-h-[7.5rem] w-full" />
       ))}
     </div>
   );

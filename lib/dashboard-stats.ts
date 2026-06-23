@@ -1,5 +1,6 @@
 import { addDaysToDateString, getTodayDateString } from "@/lib/dates";
 import type { Appointment, CustomerReview } from "./types";
+import { calculateAverageRating } from "./review-stats";
 
 export type ServicePriceLookup = (serviceId: string) => number;
 
@@ -182,22 +183,14 @@ export function getMostPopularService(
   return top;
 }
 
-/** Average rating from visible reviews, rounded to one decimal. */
+/** Average rating from reviews, rounded to one decimal. */
 export function getAverageReviewRating(
   reviews: CustomerReview[],
   options: { visibleOnly?: boolean } = {}
 ): number | null {
-  const visibleOnly = options.visibleOnly ?? true;
-  const eligible = visibleOnly
-    ? reviews.filter((review) => review.isVisible)
-    : reviews;
-
-  if (eligible.length === 0) {
-    return null;
-  }
-
-  const total = eligible.reduce((sum, review) => sum + review.rating, 0);
-  return Math.round((total / eligible.length) * 10) / 10;
+  return calculateAverageRating(reviews, {
+    visibleOnly: options.visibleOnly ?? true,
+  });
 }
 
 /** Cancelled appointments as a percentage of all appointments (0–100). */

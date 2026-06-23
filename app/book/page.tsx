@@ -236,37 +236,72 @@ export default function BookPage() {
                 <h3 className="section-eyebrow">
                   2 · תאריך ושעה
                 </h3>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  data-testid="date-input"
-                  value={appointmentDate}
-                  onChange={(e) => setAppointmentDate(e.target.value)}
-                  min={today}
-                  max={maxBookingDate}
-                  className="input-field ltr-value"
-                  disabled={!serviceId}
-                />
-                <p className="text-xs text-[#6B7280]">{hoursHint}</p>
+
+                <div>
+                  <label
+                    htmlFor="date"
+                    className="mb-2.5 block text-sm font-bold text-charcoal"
+                  >
+                    בחרי תאריך
+                  </label>
+                  <div className="booking-date-shell">
+                    <span className="booking-date-icon" aria-hidden="true">
+                      <svg
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.75}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8 4v2m8-2v2M4 9h16M6 6h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z"
+                        />
+                      </svg>
+                    </span>
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      data-testid="date-input"
+                      value={appointmentDate}
+                      onChange={(e) => setAppointmentDate(e.target.value)}
+                      min={today}
+                      max={maxBookingDate}
+                      className="booking-date-field"
+                      disabled={!serviceId}
+                      aria-describedby="date-helper-text"
+                    />
+                  </div>
+                  <p
+                    id="date-helper-text"
+                    className="mt-2 text-sm text-muted"
+                    data-testid="date-helper-text"
+                  >
+                    בחרי תאריך כדי לראות שעות פנויות
+                  </p>
+                </div>
+
+                <p className="text-xs text-muted">{hoursHint}</p>
 
                 {!serviceId || !appointmentDate ? (
                   <p className="rounded-2xl border border-dashed border-black/15 px-4 py-5 text-center text-sm text-muted">
-                    בחרו שירות ותאריך כדי לראות שעות פנויות.
+                    בחרי שירות ותאריך כדי לראות שעות פנויות.
                   </p>
                 ) : isBeyondBookingWindow ? (
                   <p
-                    className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]"
+                    className="rounded-2xl border border-black/10 bg-neutral-50 px-4 py-6 text-center text-sm font-medium text-charcoal"
                     data-testid="booking-window-message"
                   >
                     ניתן להזמין תור עד {bookingWindowDays} ימים קדימה
                   </p>
                 ) : isClosedDay ? (
-                  <p className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]">
+                  <p className="rounded-2xl border border-black/10 bg-neutral-50 px-4 py-6 text-center text-sm font-medium text-charcoal">
                     העסק אינו פעיל ביום זה
                   </p>
                 ) : isFullyBlockedDay ? (
-                  <p className="rounded-2xl border border-[#F5D0A9]/50 bg-[#FFFBF5] px-4 py-6 text-center text-sm font-medium text-[#9A3412]">
+                  <p className="rounded-2xl border border-black/10 bg-neutral-50 px-4 py-6 text-center text-sm font-medium text-charcoal">
                     התאריך שנבחר אינו זמין להזמנות
                   </p>
                 ) : availableSlots.length === 0 ? (

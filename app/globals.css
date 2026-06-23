@@ -347,6 +347,32 @@ body {
   text-align: right;
 }
 
+.booking-date-field {
+  @apply w-full rounded-2xl border-2 border-black/15 bg-white px-4 py-0 text-base font-semibold text-charcoal shadow-sm transition-all duration-300 focus:border-charcoal focus:outline-none focus:ring-4 focus:ring-black/15 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-muted;
+  min-height: 3.5rem;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+@media (min-width: 640px) {
+  .booking-date-field {
+    min-height: 4rem;
+    @apply text-lg;
+  }
+}
+
+.booking-date-shell {
+  @apply relative w-full;
+}
+
+.booking-date-shell .booking-date-icon {
+  @apply pointer-events-none absolute start-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl border border-black/10 bg-neutral-50 text-charcoal;
+}
+
+.booking-date-shell .booking-date-field {
+  @apply pe-4 ps-[4.75rem];
+}
+
 .ltr-value {
   direction: ltr;
   unicode-bidi: embed;

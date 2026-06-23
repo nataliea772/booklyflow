@@ -12,6 +12,10 @@ import { useReviews } from "@/hooks/useReviews";
 import { useServices } from "@/hooks/useServices";
 import { getServiceName } from "@/lib/availability";
 import { formatStarRating } from "@/lib/reviews-display";
+import {
+  calculateAverageRating,
+  formatAverageRatingLabel,
+} from "@/lib/review-stats";
 import { formatShortDate } from "@/lib/i18n";
 
 const SAVE_ERROR = "לא הצלחנו לעדכן את הביקורת. נסי שוב.";
@@ -33,6 +37,13 @@ export default function ReviewsPage() {
   );
 
   const visibleCount = reviews.filter((review) => review.isVisible).length;
+
+  const visibleAverageLabel = useMemo(() => {
+    return formatAverageRatingLabel(
+      calculateAverageRating(reviews, { visibleOnly: true }),
+      "דירוג ממוצע מביקורות מוצגות"
+    );
+  }, [reviews]);
 
   async function handleToggleVisible(reviewId: string, isVisible: boolean) {
     setActionError(null);
@@ -96,9 +107,17 @@ export default function ReviewsPage() {
 
       <div className="page-container pb-12 sm:pb-16">
         {reviews.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-3">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
             <Badge variant="neutral">{reviews.length} סה״כ</Badge>
             <Badge variant="primary">{visibleCount} מוצגות ללקוחות</Badge>
+            {visibleAverageLabel && (
+              <p
+                className="w-full text-sm font-semibold text-charcoal sm:w-auto"
+                data-testid="admin-reviews-average"
+              >
+                {visibleAverageLabel}
+              </p>
+            )}
           </div>
         )}
 

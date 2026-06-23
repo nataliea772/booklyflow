@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatStarRating,
   pickPublicReviews,
 } from "@/lib/reviews-display";
+import {
+  calculateAverageRating,
+  formatAverageRatingLabel,
+} from "@/lib/review-stats";
 import { getVisibleReviews } from "@/lib/supabase/reviews";
 import type { CustomerReview } from "@/lib/types";
 
@@ -38,6 +42,16 @@ export default function CustomerReviews() {
     };
   }, []);
 
+  const averageRating = useMemo(
+    () => calculateAverageRating(reviews),
+    [reviews]
+  );
+
+  const averageLabel = useMemo(
+    () => formatAverageRatingLabel(averageRating),
+    [averageRating]
+  );
+
   if (!isReady || reviews.length === 0) {
     return null;
   }
@@ -56,8 +70,22 @@ export default function CustomerReviews() {
             <span />
           </div>
           <h2 className="mt-3 text-2xl font-extrabold text-charcoal sm:text-3xl">
-            לקוחות מספרות
+            ביקורות לקוחות
           </h2>
+          {averageLabel && averageRating !== null && (
+            <div
+              className="mt-4 flex flex-col items-center gap-1"
+              data-testid="customer-reviews-average"
+            >
+              <p className="text-sm font-semibold text-charcoal">{averageLabel}</p>
+              <span
+                className="text-base tracking-tight text-charcoal"
+                aria-hidden="true"
+              >
+                {formatStarRating(Math.round(averageRating))}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
