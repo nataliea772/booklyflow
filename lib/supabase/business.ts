@@ -23,6 +23,8 @@ type BusinessSettingsRow = {
   whatsapp_phone?: string | null;
   location_url?: string | null;
   waze_url?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
   email?: string | null;
   address?: string | null;
   logo_url?: string | null;
@@ -37,6 +39,8 @@ export type UpdateBusinessSettingsInput = {
   whatsappPhone?: string | null;
   locationUrl?: string | null;
   wazeUrl?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
   email?: string | null;
   address?: string | null;
   logoUrl?: string | null;
@@ -69,6 +73,8 @@ function mapBusinessSettingsRow(row: BusinessSettingsRow): BusinessSettings {
     whatsappPhone: row.whatsapp_phone ?? undefined,
     locationUrl: row.location_url ?? undefined,
     wazeUrl: row.waze_url ?? undefined,
+    facebookUrl: row.facebook_url ?? undefined,
+    instagramUrl: row.instagram_url ?? undefined,
     email: row.email ?? undefined,
     address: row.address ?? undefined,
     logoUrl: row.logo_url ?? undefined,
@@ -99,6 +105,12 @@ function mapUpdateToRow(
   }
   if (input.wazeUrl !== undefined) {
     row.waze_url = input.wazeUrl?.trim() || null;
+  }
+  if (input.facebookUrl !== undefined) {
+    row.facebook_url = input.facebookUrl?.trim() || null;
+  }
+  if (input.instagramUrl !== undefined) {
+    row.instagram_url = input.instagramUrl?.trim() || null;
   }
   if (input.email !== undefined) {
     row.email = input.email?.trim() || null;

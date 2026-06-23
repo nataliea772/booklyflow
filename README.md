@@ -30,7 +30,7 @@ The UI uses a black-and-white polka-dot boutique theme with full Hebrew RTL supp
 
 | Area | Capabilities |
 |---|---|
-| **Public booking** | Service selection, date/time slots, double-booking prevention, featured services on homepage |
+| **Public booking** | Service selection, date/time slots, double-booking prevention, optional business photo gallery on homepage |
 | **Admin dashboard** | Today/week stats, expected revenue, popular service, average rating, cancellation rate |
 | **Appointments** | Search, filters, details modal, status actions, WhatsApp templates, delete completed/cancelled |
 | **Services** | CRUD, images, search/filter/sort, activate/deactivate |
@@ -71,7 +71,7 @@ booklyflow/
 │   └── api/
 │       ├── notifications/whatsapp/
 │       └── reviews/submit/
-├── components/                  # UI (Modal, StatCard, FeaturedServices, …)
+├── components/                  # UI (Modal, StatCard, BusinessGallery, …)
 ├── hooks/                       # useAppointments, useServices, useReviews, …
 ├── lib/
 │   ├── availability.ts          # Scheduling engine
@@ -86,7 +86,7 @@ booklyflow/
 
 | Route | Access | Description |
 |---|---|---|
-| `/` | Public | Homepage with hero, featured services, reviews |
+| `/` | Public | Homepage with hero, business gallery, reviews |
 | `/book` | Public | Booking flow |
 | `/review/[id]` | Public | Customer review submission |
 | `/thank-you` | Public | Booking confirmation |
@@ -108,10 +108,11 @@ booklyflow/
 | `appointments` | Bookings with status, notes, admin notes |
 | `business_settings` | Branding, hours, buffer, booking window, contact links |
 | `blocked_times` | Full-day or time-range unavailability |
+| `business_gallery_images` | Optional public photo gallery for homepage |
 | `customer_reviews` | Ratings and comments linked to appointments |
 | `appointment_notifications` | WhatsApp/SMS event tracking |
 
-Migrations live in `lib/supabase/migrations/` (001–015). Run them in order in the Supabase SQL Editor when setting up or upgrading.
+Migrations live in `lib/supabase/migrations/` (001–016). Run them in order in the Supabase SQL Editor when setting up or upgrading.
 
 ---
 

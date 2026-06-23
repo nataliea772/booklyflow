@@ -24,6 +24,8 @@ const BRANDING_COLUMNS =
 
 const CONTACT_LINK_COLUMNS = "whatsapp_phone, location_url, waze_url";
 
+const SOCIAL_LINK_COLUMNS = "facebook_url, instagram_url";
+
 function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
   const startHour =
     typeof row.start_hour === "string"
@@ -68,6 +70,10 @@ function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
     locationUrl:
       typeof row.location_url === "string" ? row.location_url : undefined,
     wazeUrl: typeof row.waze_url === "string" ? row.waze_url : undefined,
+    facebookUrl:
+      typeof row.facebook_url === "string" ? row.facebook_url : undefined,
+    instagramUrl:
+      typeof row.instagram_url === "string" ? row.instagram_url : undefined,
     email: typeof row.email === "string" ? row.email : undefined,
     address: typeof row.address === "string" ? row.address : undefined,
     logoUrl: typeof row.logo_url === "string" ? row.logo_url : undefined,
@@ -83,13 +89,22 @@ function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
 async function fetchBusinessSettingsFromClient(
   supabase: SupabaseClient
 ): Promise<BusinessSettings> {
-  const fullSelect = `${CORE_COLUMNS}, working_hours, booking_window_days, ${BRANDING_COLUMNS}, ${CONTACT_LINK_COLUMNS}`;
+  const fullSelect = `${CORE_COLUMNS}, working_hours, booking_window_days, ${BRANDING_COLUMNS}, ${CONTACT_LINK_COLUMNS}, ${SOCIAL_LINK_COLUMNS}`;
   let { data, error } = await supabase
     .from("business_settings")
     .select(fullSelect)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  if (error && isMissingColumnError(error)) {
+    ({ data, error } = await supabase
+      .from("business_settings")
+      .select(`${CORE_COLUMNS}, working_hours, booking_window_days, ${BRANDING_COLUMNS}, ${CONTACT_LINK_COLUMNS}`)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle());
+  }
 
   if (error && isMissingColumnError(error)) {
     ({ data, error } = await supabase

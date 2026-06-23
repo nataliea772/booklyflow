@@ -6,6 +6,7 @@ import AdminToast from "@/components/AdminToast";
 import Button from "@/components/Button";
 import Card, { CardHeader } from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
+import BusinessGalleryManager from "@/components/BusinessGalleryManager";
 import ImageUploadField from "@/components/ImageUploadField";
 import { PageLoadingState } from "@/components/LoadingSkeleton";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
@@ -15,6 +16,10 @@ import {
   MIN_BOOKING_WINDOW_DAYS,
   normalizeBookingWindowDays,
 } from "@/lib/booking-window";
+import {
+  normalizeSocialUrl,
+  validateSocialUrl,
+} from "@/lib/social-links";
 import type { BusinessWorkingDay } from "@/lib/types";
 import { createDefaultWorkingHours } from "@/lib/working-hours";
 import {
@@ -48,6 +53,8 @@ export default function BusinessSettingsPage() {
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [locationUrl, setLocationUrl] = useState("");
   const [wazeUrl, setWazeUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [workingHours, setWorkingHours] = useState<BusinessWorkingDay[]>(
@@ -58,6 +65,7 @@ export default function BusinessSettingsPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -91,6 +99,8 @@ export default function BusinessSettingsPage() {
     setWhatsappPhone(settings.whatsappPhone ?? "");
     setLocationUrl(settings.locationUrl ?? "");
     setWazeUrl(settings.wazeUrl ?? "");
+    setFacebookUrl(settings.facebookUrl ?? "");
+    setInstagramUrl(settings.instagramUrl ?? "");
     setEmail(settings.email ?? "");
     setAddress(settings.address ?? "");
     setWorkingHours(settings.workingHours);
@@ -158,11 +168,34 @@ export default function BusinessSettingsPage() {
 
   async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setContactError(null);
+
+    const facebookError = facebookUrl.trim()
+      ? validateSocialUrl(facebookUrl, "facebook")
+      : null;
+    const instagramError = instagramUrl.trim()
+      ? validateSocialUrl(instagramUrl, "instagram")
+      : null;
+
+    if (facebookError || instagramError) {
+      setContactError(facebookError ?? instagramError);
+      return;
+    }
+
+    const normalizedFacebook = facebookUrl.trim()
+      ? normalizeSocialUrl(facebookUrl, "facebook")
+      : null;
+    const normalizedInstagram = instagramUrl.trim()
+      ? normalizeSocialUrl(instagramUrl, "instagram")
+      : null;
+
     await persistSettings({
       phone: phone || null,
       whatsappPhone: whatsappPhone || null,
       locationUrl: locationUrl || null,
       wazeUrl: wazeUrl || null,
+      facebookUrl: normalizedFacebook,
+      instagramUrl: normalizedInstagram,
     });
   }
 
@@ -445,13 +478,18 @@ export default function BusinessSettingsPage() {
             <>
               <CardHeader
                 title="קישורי קשר"
-                description="הכפתורים יוצגו ללקוחות רק אם הוגדרו פרטים מתאימים."
+                description="הכפתורים והאייקונים יוצגו ללקוחות רק אם הוגדרו פרטים מתאימים."
               />
               <form
                 onSubmit={handleContactSubmit}
                 className="space-y-5"
                 data-testid="contact-links-form"
               >
+                {contactError && (
+                  <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {contactError}
+                  </p>
+                )}
                 <div>
                   <label htmlFor="contactPhone" className="mb-2.5 block text-sm font-bold text-charcoal">
                     טלפון להתקשרות
@@ -508,6 +546,37 @@ export default function BusinessSettingsPage() {
                     data-testid="waze-url-input"
                   />
                 </div>
+                <div>
+                  <label htmlFor="facebookUrl" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    קישור Facebook
+                  </label>
+                  <input
+                    id="facebookUrl"
+                    type="url"
+                    value={facebookUrl}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="https://facebook.com/your-page"
+                    data-testid="facebook-url-input"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="instagramUrl" className="mb-2.5 block text-sm font-bold text-charcoal">
+                    קישור Instagram
+                  </label>
+                  <input
+                    id="instagramUrl"
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    className="input-field ltr-value"
+                    placeholder="https://instagram.com/your-page"
+                    data-testid="instagram-url-input"
+                  />
+                </div>
+                <p className="text-xs text-muted">
+                  האייקונים יוצגו ללקוחות רק אם הוגדר קישור
+                </p>
                 <Button type="submit" size="lg" disabled={isSaving}>
                   {isSaving ? "שומר…" : "שמירת קישורי קשר"}
                 </Button>
@@ -541,6 +610,8 @@ export default function BusinessSettingsPage() {
                   {isSaving ? "שומר…" : "שמירת תמונות"}
                 </Button>
               </form>
+
+              <BusinessGalleryManager />
             </>
           )}
 

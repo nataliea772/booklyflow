@@ -114,6 +114,11 @@ export async function uploadServiceImage(
   return uploadImage(path, file);
 }
 
+export async function uploadGalleryImage(file: File): Promise<string> {
+  const path = buildUniquePath("business/gallery", file);
+  return uploadImage(path, file);
+}
+
 export async function deleteImageByUrl(url: string): Promise<void> {
   if (!isSupabaseConfigured() || !url.trim()) {
     return;

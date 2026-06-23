@@ -56,24 +56,35 @@ describe("buildPublicContactActions", () => {
     expect(hasPublicContactActions({})).toBe(false);
   });
 
-  it("builds phone, navigation, and whatsapp actions when configured", () => {
+  it("builds phone, navigation, whatsapp, and social actions when configured", () => {
     const actions = buildPublicContactActions({
       phone: "050-123-4567",
       whatsappPhone: "050-987-6543",
       wazeUrl: "https://waze.com/ul/abc",
+      instagramUrl: "https://instagram.com/booklyflow",
+      facebookUrl: "https://facebook.com/booklyflow",
     });
 
     expect(actions.map((action) => action.id)).toEqual([
       "whatsapp",
+      "instagram",
+      "facebook",
       "navigation",
       "phone",
     ]);
     expect(actions[0]?.ariaLabel).toBe("שליחת הודעת WhatsApp");
-    expect(actions[0]?.href).toContain("972509876543");
-    expect(actions[1]?.external).toBe(true);
-    expect(actions[1]?.ariaLabel).toBe("ניווט ב-Waze");
-    expect(actions[2]?.href).toBe("tel:0501234567");
-    expect(actions[2]?.ariaLabel).toBe("התקשרות לעסק");
+    expect(actions[1]?.ariaLabel).toBe("פתיחת Instagram");
+    expect(actions[2]?.ariaLabel).toBe("פתיחת Facebook");
+    expect(actions[3]?.external).toBe(true);
+    expect(actions[4]?.href).toBe("tel:0501234567");
+  });
+
+  it("omits social icons when links are not configured", () => {
+    const actions = buildPublicContactActions({
+      wazeUrl: "https://waze.com/ul/abc",
+    });
+
+    expect(actions.map((action) => action.id)).toEqual(["navigation"]);
   });
 
   it("uses phone as whatsapp fallback", () => {

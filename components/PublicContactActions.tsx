@@ -24,6 +24,36 @@ function WhatsAppIcon() {
   );
 }
 
+function InstagramIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M14 8.5h2.5V5h-2.5c-2.8 0-4.5 1.7-4.5 4.6V12H7v3.5h2V22h3v-6.5h2.6L15.5 12H12V9.8c0-1 .3-1.3 2-1.3z" />
+    </svg>
+  );
+}
+
 function WazeIcon() {
   return (
     <svg
@@ -65,6 +95,8 @@ function PhoneIcon() {
 
 const iconByActionId = {
   whatsapp: WhatsAppIcon,
+  instagram: InstagramIcon,
+  facebook: FacebookIcon,
   navigation: WazeIcon,
   phone: PhoneIcon,
 } as const;

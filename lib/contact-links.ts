@@ -1,4 +1,5 @@
 import type { BusinessSettings } from "@/lib/types";
+import { normalizeSocialUrl } from "@/lib/social-links";
 
 export const DEFAULT_WHATSAPP_MESSAGE = "שלום, אשמח לקבוע תור";
 
@@ -63,19 +64,26 @@ export function resolveWhatsAppPhone(
 export function hasPublicContactActions(
   settings: Pick<
     BusinessSettings,
-    "phone" | "whatsappPhone" | "wazeUrl" | "locationUrl"
+    | "phone"
+    | "whatsappPhone"
+    | "wazeUrl"
+    | "locationUrl"
+    | "facebookUrl"
+    | "instagramUrl"
   >
 ): boolean {
   return Boolean(
     settings.phone?.trim() ||
       settings.whatsappPhone?.trim() ||
       settings.wazeUrl?.trim() ||
-      settings.locationUrl?.trim()
+      settings.locationUrl?.trim() ||
+      settings.facebookUrl?.trim() ||
+      settings.instagramUrl?.trim()
   );
 }
 
 export type PublicContactAction = {
-  id: "phone" | "navigation" | "whatsapp";
+  id: "phone" | "navigation" | "whatsapp" | "facebook" | "instagram";
   ariaLabel: string;
   href: string;
   external?: boolean;
@@ -84,7 +92,12 @@ export type PublicContactAction = {
 export function buildPublicContactActions(
   settings: Pick<
     BusinessSettings,
-    "phone" | "whatsappPhone" | "wazeUrl" | "locationUrl"
+    | "phone"
+    | "whatsappPhone"
+    | "wazeUrl"
+    | "locationUrl"
+    | "facebookUrl"
+    | "instagramUrl"
   >
 ): PublicContactAction[] {
   const actions: PublicContactAction[] = [];
@@ -95,6 +108,29 @@ export function buildPublicContactActions(
       id: "whatsapp",
       ariaLabel: "שליחת הודעת WhatsApp",
       href: buildWhatsAppLink(whatsappPhone),
+      external: true,
+    });
+  }
+
+  const instagramUrl = normalizeSocialUrl(
+    settings.instagramUrl ?? "",
+    "instagram"
+  );
+  if (instagramUrl) {
+    actions.push({
+      id: "instagram",
+      ariaLabel: "פתיחת Instagram",
+      href: instagramUrl,
+      external: true,
+    });
+  }
+
+  const facebookUrl = normalizeSocialUrl(settings.facebookUrl ?? "", "facebook");
+  if (facebookUrl) {
+    actions.push({
+      id: "facebook",
+      ariaLabel: "פתיחת Facebook",
+      href: facebookUrl,
       external: true,
     });
   }

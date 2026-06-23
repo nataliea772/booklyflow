@@ -59,6 +59,15 @@ export type CustomerReview = {
   createdAt: string;
 };
 
+export type BusinessGalleryImage = {
+  id: string;
+  imageUrl: string;
+  altText?: string;
+  displayOrder: number;
+  isVisible: boolean;
+  createdAt: string;
+};
+
 export type BusinessSettings = {
   id?: string;
   businessName: string;
@@ -73,6 +82,8 @@ export type BusinessSettings = {
   whatsappPhone?: string;
   locationUrl?: string;
   wazeUrl?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
   email?: string;
   address?: string;
   logoUrl?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import FeaturedServices from "@/components/FeaturedServices";
+import BusinessGallery from "@/components/BusinessGallery";
 import CustomerReviews from "@/components/CustomerReviews";
 import BoutiqueHero from "@/components/BoutiqueHero";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
@@ -29,7 +29,7 @@ export default function HomePage() {
         </div>
       )}
       <BoutiqueHero settings={displaySettings} />
-      <FeaturedServices />
+      <BusinessGallery />
       <CustomerReviews />
     </>
   );
