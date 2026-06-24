@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ManualWhatsAppModal from "@/components/ManualWhatsAppModal";
 import AdminNav from "@/components/AdminNav";
 import AppointmentEditForm from "@/components/AppointmentEditForm";
 import Badge from "@/components/Badge";
@@ -15,8 +16,9 @@ import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 import { useServices } from "@/hooks/useServices";
 import { hasScheduleChanged } from "@/lib/appointment-schedule";
 import {
-  buildWhatsAppActionNotice,
-  type WhatsAppActionNotice,
+  buildWhatsAppActionOutcome,
+  MANUAL_WHATSAPP_MODAL_TITLE,
+  type WhatsAppManualModalContent,
 } from "@/lib/appointment-whatsapp-manual";
 import {
   filterAppointmentsWithQuickRange,
@@ -93,9 +95,11 @@ export default function AppointmentsPage() {
   const { blockedTimes } = useBlockedTimes();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [confirmNotice, setConfirmNotice] = useState<WhatsAppActionNotice | null>(
-    null
-  );
+  const [whatsappSuccessNotice, setWhatsappSuccessNotice] = useState<
+    string | null
+  >(null);
+  const [manualWhatsAppModal, setManualWhatsAppModal] =
+    useState<WhatsAppManualModalContent | null>(null);
   const [deleteNotice, setDeleteNotice] = useState<{
     type: "success" | "error";
     message: string;
@@ -111,18 +115,18 @@ export default function AppointmentsPage() {
   const today = getTodayDateString();
 
   useEffect(() => {
-    if (!confirmNotice) {
+    if (!whatsappSuccessNotice) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setConfirmNotice(null);
+      setWhatsappSuccessNotice(null);
     }, NOTICE_DISMISS_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [confirmNotice]);
+  }, [whatsappSuccessNotice]);
 
   useEffect(() => {
     if (!deleteNotice) {
@@ -138,21 +142,22 @@ export default function AppointmentsPage() {
     };
   }, [deleteNotice]);
 
-  function showWhatsAppNotice(
+  function showWhatsAppOutcome(
     appointment: Appointment,
     eventType: WhatsAppEventType,
     whatsAppResult: Awaited<ReturnType<typeof sendAppointmentWhatsApp>>
   ) {
-    setConfirmNotice(
-      buildWhatsAppActionNotice(
-        appointment,
-        eventType,
-        whatsAppResult,
-        services,
-        businessSettings,
-        window.location.origin
-      )
+    const outcome = buildWhatsAppActionOutcome(
+      appointment,
+      eventType,
+      whatsAppResult,
+      services,
+      businessSettings,
+      window.location.origin
     );
+
+    setWhatsappSuccessNotice(outcome.successMessage ?? null);
+    setManualWhatsAppModal(outcome.manualModal ?? null);
   }
 
   const filteredAppointments = useMemo(
@@ -232,12 +237,13 @@ export default function AppointmentsPage() {
     setEditingId(null);
 
     if (scheduleChanged) {
-      setConfirmNotice(null);
+      setWhatsappSuccessNotice(null);
+      setManualWhatsAppModal(null);
       const whatsAppResult = await sendAppointmentWhatsApp(
         appointmentId,
         "rescheduled"
       );
-      showWhatsAppNotice(
+      showWhatsAppOutcome(
         {
           ...existing,
           serviceId: input.serviceId,
@@ -254,7 +260,8 @@ export default function AppointmentsPage() {
   }
 
   async function handleConfirm(appointmentId: string) {
-    setConfirmNotice(null);
+    setWhatsappSuccessNotice(null);
+    setManualWhatsAppModal(null);
     setConfirmingId(appointmentId);
 
     const appointment = appointments.find((item) => item.id === appointmentId);
@@ -270,7 +277,7 @@ export default function AppointmentsPage() {
         appointmentId,
         "confirmed"
       );
-      showWhatsAppNotice(
+      showWhatsAppOutcome(
         { ...appointment, status: "confirmed" },
         "confirmed",
         whatsAppResult
@@ -281,7 +288,8 @@ export default function AppointmentsPage() {
   }
 
   async function handleCancel(appointmentId: string) {
-    setConfirmNotice(null);
+    setWhatsappSuccessNotice(null);
+    setManualWhatsAppModal(null);
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) {
       return;
@@ -293,7 +301,7 @@ export default function AppointmentsPage() {
       appointmentId,
       "cancelled"
     );
-    showWhatsAppNotice(
+    showWhatsAppOutcome(
       { ...appointment, status: "cancelled" },
       "cancelled",
       whatsAppResult
@@ -301,7 +309,8 @@ export default function AppointmentsPage() {
   }
 
   async function handleComplete(appointmentId: string) {
-    setConfirmNotice(null);
+    setWhatsappSuccessNotice(null);
+    setManualWhatsAppModal(null);
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) {
       return;
@@ -313,7 +322,7 @@ export default function AppointmentsPage() {
       appointmentId,
       "review_request"
     );
-    showWhatsAppNotice(
+    showWhatsAppOutcome(
       { ...appointment, status: "completed" },
       "review_request",
       whatsAppResult
@@ -559,29 +568,22 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        {confirmNotice && (
+        {whatsappSuccessNotice && (
           <div
-            className={`mb-6 rounded-2xl px-4 py-3 text-sm font-medium ${
-              confirmNotice.type === "success"
-                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border border-amber-200 bg-amber-50 text-amber-900"
-            }`}
+            className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
             data-testid="confirm-appointment-notice"
           >
-            <p>{confirmNotice.message}</p>
-            {confirmNotice.manualWhatsAppHref && (
-              <a
-                href={confirmNotice.manualWhatsAppHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="manual-whatsapp-link"
-                className="boutique-button mt-3 inline-flex items-center px-4 py-2 text-xs"
-              >
-                שליחה ידנית ב-WhatsApp
-              </a>
-            )}
+            {whatsappSuccessNotice}
           </div>
         )}
+
+        <ManualWhatsAppModal
+          open={Boolean(manualWhatsAppModal)}
+          onClose={() => setManualWhatsAppModal(null)}
+          title={MANUAL_WHATSAPP_MODAL_TITLE}
+          description={manualWhatsAppModal?.description ?? ""}
+          whatsappLink={manualWhatsAppModal?.whatsappLink}
+        />
 
         {appointments.length > 0 && (
           <div className="mb-6 flex flex-wrap items-center gap-3">
