@@ -15,12 +15,24 @@ import {
   getWorkingHoursForDate,
   normalizeBusinessSettings,
 } from "./working-hours";
+import { getLocalDateString } from "./dates";
 
 export const DEFAULT_SLOT_INTERVAL_MINUTES = 30;
 
+/** Normalizes "HH:MM", "HH:MM:SS", or 12-hour strings for parsing. */
+export function normalizeTimeString(time: string): string {
+  const trimmed = time.trim();
+  const withSeconds = trimmed.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (withSeconds) {
+    return `${withSeconds[1].padStart(2, "0")}:${withSeconds[2]}`;
+  }
+
+  return trimmed;
+}
+
 /** Converts "HH:MM" (24h) or "H:MM AM/PM" into minutes from midnight. */
 export function timeToMinutes(time: string): number {
-  const trimmed = time.trim();
+  const trimmed = normalizeTimeString(time);
 
   const twelveHourMatch = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (twelveHourMatch) {
@@ -147,12 +159,18 @@ function getBlockingAppointmentsForDate(
   appointments: Appointment[],
   excludeAppointmentId?: string
 ): Appointment[] {
-  return appointments.filter(
-    (appointment) =>
-      appointment.id !== excludeAppointmentId &&
-      appointment.appointmentDate === selectedDate &&
-      isBlockingAppointmentStatus(appointment.status)
-  );
+  return appointments
+    .filter(
+      (appointment) =>
+        appointment.id !== excludeAppointmentId &&
+        appointment.appointmentDate === selectedDate &&
+        isBlockingAppointmentStatus(appointment.status)
+    )
+    .map((appointment) => ({
+      ...appointment,
+      startTime: normalizeTimeString(appointment.startTime),
+      endTime: normalizeTimeString(appointment.endTime),
+    }));
 }
 
 function getManualBlockedRanges(
@@ -162,9 +180,34 @@ function getManualBlockedRanges(
   return getBlockedTimesForDate(selectedDate, blockedTimes)
     .filter((blocked) => !blocked.isFullDay && blocked.startTime && blocked.endTime)
     .map((blocked) => ({
-      startTime: blocked.startTime!,
-      endTime: blocked.endTime!,
+      startTime: normalizeTimeString(blocked.startTime!),
+      endTime: normalizeTimeString(blocked.endTime!),
     }));
+}
+
+/**
+ * When booking today, customers cannot pick a slot that already started.
+ * Returns the next grid-aligned start time at or after now.
+ */
+export function getEarliestBookableSlotStart(
+  selectedDate: string,
+  slotIntervalMinutes: number = DEFAULT_SLOT_INTERVAL_MINUTES,
+  now: Date = new Date()
+): string | undefined {
+  const today = getLocalDateString(now);
+  if (selectedDate !== today) {
+    return undefined;
+  }
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const interval = Math.max(1, slotIntervalMinutes);
+  const alignedStart = Math.ceil(nowMinutes / interval) * interval;
+
+  if (alignedStart >= 24 * 60) {
+    return undefined;
+  }
+
+  return minutesToTime(alignedStart);
 }
 
 export function getAvailableSlots(
@@ -178,6 +221,7 @@ export function getAvailableSlots(
     blockedTimes = [],
     excludeAppointmentId,
     slotIntervalMinutes = DEFAULT_SLOT_INTERVAL_MINUTES,
+    minSlotStartTime,
   } = params;
 
   if (isDateFullyBlocked(selectedDate, blockedTimes)) {
@@ -191,8 +235,12 @@ export function getAvailableSlots(
 
   const normalized = normalizeBusinessSettings(businessSettings);
   const bufferMinutes = normalized.bufferMinutes ?? 0;
-  const businessStart = timeToMinutes(dayHours.startHour);
-  const businessEnd = timeToMinutes(dayHours.endHour);
+  const businessStart = timeToMinutes(normalizeTimeString(dayHours.startHour));
+  const businessEnd = timeToMinutes(normalizeTimeString(dayHours.endHour));
+  const earliestSlotStartMinutes = minSlotStartTime
+    ? timeToMinutes(minSlotStartTime)
+    : businessStart;
+  const slotLoopStart = Math.max(businessStart, earliestSlotStartMinutes);
   const blockingAppointments = getBlockingAppointmentsForDate(
     selectedDate,
     appointments,
@@ -202,7 +250,7 @@ export function getAvailableSlots(
   const availableSlots: TimeSlot[] = [];
 
   for (
-    let slotStartMinutes = businessStart;
+    let slotStartMinutes = slotLoopStart;
     slotStartMinutes < businessEnd;
     slotStartMinutes += slotIntervalMinutes
   ) {

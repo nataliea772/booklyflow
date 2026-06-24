@@ -1,4 +1,5 @@
 import type { Appointment, AppointmentStatus, Service } from "@/lib/types";
+import { normalizeTimeString } from "@/lib/availability";
 
 export type ServiceRow = {
   id: string;
@@ -58,9 +59,9 @@ export function mapAppointmentRow(row: AppointmentRow): Appointment {
     customerName: row.customer_name,
     customerPhone: row.customer_phone,
     customerEmail: row.customer_email ?? undefined,
-    appointmentDate: row.appointment_date,
-    startTime: row.start_time,
-    endTime: row.end_time,
+    appointmentDate: row.appointment_date.slice(0, 10),
+    startTime: normalizeTimeString(row.start_time),
+    endTime: normalizeTimeString(row.end_time),
     status,
     notes: row.notes ?? undefined,
     adminNote: row.admin_note ?? undefined,

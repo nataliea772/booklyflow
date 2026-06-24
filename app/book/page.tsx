@@ -19,6 +19,8 @@ import {
   findService,
   formatTimeLabel,
   getAvailableSlots,
+  getEarliestBookableSlotStart,
+  DEFAULT_SLOT_INTERVAL_MINUTES,
   isDateFullyBlocked,
   isWorkingDay,
 } from "@/lib/availability";
@@ -76,6 +78,10 @@ export default function BookPage() {
       appointments,
       businessSettings,
       blockedTimes,
+      minSlotStartTime: getEarliestBookableSlotStart(
+        appointmentDate,
+        DEFAULT_SLOT_INTERVAL_MINUTES
+      ),
     });
   }, [
     selectedService,

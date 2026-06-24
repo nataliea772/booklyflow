@@ -5,6 +5,7 @@ import {
   doTimeRangesOverlap,
   doesSlotConflictWithBufferedAppointment,
   getAvailableSlots,
+  getEarliestBookableSlotStart,
   isBlockingAppointmentStatus,
   isDateFullyBlocked,
   minutesToTime,
@@ -99,6 +100,11 @@ function slotStartTimes(slots: ReturnType<typeof getAvailableSlots>): string[] {
 describe("timeToMinutes", () => {
   it('converts "09:30" to 570', () => {
     expect(timeToMinutes("09:30")).toBe(570);
+  });
+
+  it("converts Supabase HH:MM:SS values", () => {
+    expect(timeToMinutes("13:00:00")).toBe(780);
+    expect(timeToMinutes("09:15:00")).toBe(555);
   });
 
   it("converts 12-hour times", () => {
@@ -359,6 +365,125 @@ describe("getAvailableSlots", () => {
 
     expect(slotStartTimes(withBuffer)).not.toContain("11:00");
     expect(slotStartTimes(withoutBuffer)).toContain("11:00");
+  });
+
+  it("shows morning slots before a long afternoon appointment with buffer", () => {
+    const bufferFiveSettings: BusinessSettings = {
+      ...businessSettings,
+      startHour: "09:00",
+      endHour: "18:00",
+      bufferMinutes: 5,
+      workingHours: workingHoursFromLegacy([0, 1, 2, 3, 4], "09:00", "18:00"),
+    };
+
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service90,
+      appointments: [
+        createAppointment({
+          id: "afternoon-block",
+          startTime: "13:00",
+          endTime: "16:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings: bufferFiveSettings,
+      slotIntervalMinutes: 30,
+    });
+
+    const starts = slotStartTimes(slots);
+
+    expect(starts).toEqual(
+      expect.arrayContaining(["09:00", "09:30", "10:00", "10:30", "11:00"])
+    );
+    expect(starts).not.toEqual(
+      expect.arrayContaining([
+        "11:30",
+        "12:00",
+        "12:30",
+        "13:00",
+        "13:30",
+        "14:00",
+        "14:30",
+        "15:00",
+        "15:30",
+        "16:00",
+      ])
+    );
+    expect(starts).toContain("16:30");
+  });
+
+  it("can reduce visible slots when a morning block ends at 11:00", () => {
+    const blockedTimes: BlockedTime[] = [
+      {
+        id: "morning-block",
+        startDate: TEST_DATE,
+        endDate: TEST_DATE,
+        isFullDay: false,
+        startTime: "09:00",
+        endTime: "11:00",
+        createdAt: "2026-06-22T08:00:00.000Z",
+      },
+    ];
+
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service90,
+      appointments: [
+        createAppointment({
+          id: "afternoon-block",
+          startTime: "13:00",
+          endTime: "16:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings: {
+        ...businessSettings,
+        bufferMinutes: 5,
+      },
+      blockedTimes,
+    });
+
+    expect(slotStartTimes(slots)).toEqual(["11:00", "16:30"]);
+  });
+
+  it("does not hide morning slots on future dates when only one afternoon appointment exists", () => {
+    const slots = getAvailableSlots({
+      selectedDate: "2026-07-15",
+      selectedService: service90,
+      appointments: [
+        createAppointment({
+          id: "future-afternoon",
+          appointmentDate: "2026-07-15",
+          startTime: "13:00",
+          endTime: "16:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings: {
+        ...businessSettings,
+        bufferMinutes: 5,
+      },
+    });
+
+    expect(slotStartTimes(slots)).toEqual(
+      expect.arrayContaining(["09:00", "09:30", "10:00", "10:30", "11:00"])
+    );
+  });
+
+  it("filters past slots only when minSlotStartTime is set for today", () => {
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service90,
+      appointments: [],
+      businessSettings,
+      minSlotStartTime: "11:00",
+    });
+
+    expect(slotStartTimes(slots)).not.toEqual(
+      expect.arrayContaining(["09:00", "09:30", "10:00", "10:30"])
+    );
+    expect(slotStartTimes(slots)).toContain("11:00");
   });
 
   it("returns an empty array for non-working days", () => {
@@ -644,6 +769,28 @@ describe("doesSlotConflictWithBufferedAppointment", () => {
         15
       )
     ).toBe(true);
+  });
+});
+
+describe("getEarliestBookableSlotStart", () => {
+  it("returns the next aligned slot on the selected day", () => {
+    expect(
+      getEarliestBookableSlotStart(
+        "2026-06-22",
+        30,
+        new Date("2026-06-22T10:41:00")
+      )
+    ).toBe("11:00");
+  });
+
+  it("returns undefined for future dates", () => {
+    expect(
+      getEarliestBookableSlotStart(
+        "2026-07-15",
+        30,
+        new Date("2026-06-22T10:41:00")
+      )
+    ).toBeUndefined();
   });
 });
 

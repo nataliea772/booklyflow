@@ -107,4 +107,6 @@ export type GetAvailableSlotsParams = {
   excludeAppointmentId?: string;
   /** Grid step for slot starts; defaults to 30 minutes. */
   slotIntervalMinutes?: number;
+  /** Earliest slot start on the selected day (e.g. hide past times when booking today). */
+  minSlotStartTime?: string;
 };

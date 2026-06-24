@@ -26,6 +26,21 @@ const CONTACT_LINK_COLUMNS = "whatsapp_phone, location_url, waze_url";
 
 const SOCIAL_LINK_COLUMNS = "facebook_url, instagram_url";
 
+function parseBufferMinutes(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return defaultBusinessSettings.bufferMinutes;
+}
+
 function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
   const startHour =
     typeof row.start_hour === "string"
@@ -52,10 +67,7 @@ function mapPartialRow(row: Record<string, unknown>): BusinessSettings {
     workingHours,
     startHour,
     endHour,
-    bufferMinutes:
-      typeof row.buffer_minutes === "number"
-        ? row.buffer_minutes
-        : defaultBusinessSettings.bufferMinutes,
+    bufferMinutes: parseBufferMinutes(row.buffer_minutes),
     bookingWindowDays: normalizeBookingWindowDays(
       typeof row.booking_window_days === "number"
         ? row.booking_window_days
