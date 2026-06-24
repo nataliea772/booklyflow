@@ -1,5 +1,6 @@
 import type {
   Appointment,
+  AppointmentStatus,
   BlockedTime,
   BusinessSettings,
   GetAvailableSlotsParams,
@@ -15,7 +16,7 @@ import {
   normalizeBusinessSettings,
 } from "./working-hours";
 
-const SLOT_INTERVAL_MINUTES = 30;
+export const DEFAULT_SLOT_INTERVAL_MINUTES = 30;
 
 /** Converts "HH:MM" (24h) or "H:MM AM/PM" into minutes from midnight. */
 export function timeToMinutes(time: string): number {
@@ -91,25 +92,67 @@ export function isWorkingDay(
   return Boolean(dayHours?.isOpen);
 }
 
-function getAppointmentBlockedRanges(
+/** Appointments that occupy time on the schedule for availability purposes. */
+export function isBlockingAppointmentStatus(
+  status: AppointmentStatus
+): boolean {
+  return (
+    status === "pending" ||
+    status === "confirmed" ||
+    status === "completed"
+  );
+}
+
+/**
+ * Buffer rule: every appointment keeps bufferMinutes clear before and after.
+ * The candidate slot is expanded by buffer on both sides, then checked against
+ * the raw appointment interval [appointmentStart, appointmentEnd).
+ *
+ * Example — existing 10:00–11:00, buffer 15, candidate 09:30–10:00:
+ *   buffered candidate 09:15–10:15 overlaps 10:00–11:00 → blocked.
+ * Example — candidate 09:15–09:45:
+ *   buffered 09:00–10:00 does not overlap 10:00–11:00 → allowed.
+ */
+export function doesSlotConflictWithBufferedAppointment(
+  candidateStart: string,
+  candidateEnd: string,
+  appointmentStart: string,
+  appointmentEnd: string,
+  bufferMinutes: number
+): boolean {
+  if (bufferMinutes <= 0) {
+    return doTimeRangesOverlap(
+      candidateStart,
+      candidateEnd,
+      appointmentStart,
+      appointmentEnd
+    );
+  }
+
+  const candidateStartBuffered = minutesToTime(
+    timeToMinutes(candidateStart) - bufferMinutes
+  );
+  const candidateEndBuffered = minutesToTime(
+    timeToMinutes(candidateEnd) + bufferMinutes
+  );
+
+  return (
+    timeToMinutes(candidateStartBuffered) < timeToMinutes(appointmentEnd) &&
+    timeToMinutes(candidateEndBuffered) > timeToMinutes(appointmentStart)
+  );
+}
+
+function getBlockingAppointmentsForDate(
   selectedDate: string,
   appointments: Appointment[],
-  bufferMinutes: number,
   excludeAppointmentId?: string
-): Array<{ startTime: string; endTime: string }> {
-  return appointments
-    .filter(
-      (appointment) =>
-        appointment.id !== excludeAppointmentId &&
-        appointment.appointmentDate === selectedDate &&
-        (appointment.status === "confirmed" || appointment.status === "pending")
-    )
-    .map((appointment) => ({
-      startTime: appointment.startTime,
-      endTime: minutesToTime(
-        timeToMinutes(appointment.endTime) + bufferMinutes
-      ),
-    }));
+): Appointment[] {
+  return appointments.filter(
+    (appointment) =>
+      appointment.id !== excludeAppointmentId &&
+      appointment.appointmentDate === selectedDate &&
+      isBlockingAppointmentStatus(appointment.status)
+  );
 }
 
 function getManualBlockedRanges(
@@ -134,6 +177,7 @@ export function getAvailableSlots(
     businessSettings,
     blockedTimes = [],
     excludeAppointmentId,
+    slotIntervalMinutes = DEFAULT_SLOT_INTERVAL_MINUTES,
   } = params;
 
   if (isDateFullyBlocked(selectedDate, blockedTimes)) {
@@ -146,23 +190,21 @@ export function getAvailableSlots(
   }
 
   const normalized = normalizeBusinessSettings(businessSettings);
+  const bufferMinutes = normalized.bufferMinutes ?? 0;
   const businessStart = timeToMinutes(dayHours.startHour);
   const businessEnd = timeToMinutes(dayHours.endHour);
-  const blockedRanges = [
-    ...getAppointmentBlockedRanges(
-      selectedDate,
-      appointments,
-      normalized.bufferMinutes,
-      excludeAppointmentId
-    ),
-    ...getManualBlockedRanges(selectedDate, blockedTimes),
-  ];
+  const blockingAppointments = getBlockingAppointmentsForDate(
+    selectedDate,
+    appointments,
+    excludeAppointmentId
+  );
+  const manualBlockedRanges = getManualBlockedRanges(selectedDate, blockedTimes);
   const availableSlots: TimeSlot[] = [];
 
   for (
     let slotStartMinutes = businessStart;
     slotStartMinutes < businessEnd;
-    slotStartMinutes += SLOT_INTERVAL_MINUTES
+    slotStartMinutes += slotIntervalMinutes
   ) {
     const slotStartTime = minutesToTime(slotStartMinutes);
     const slotEndTime = calculateEndTime(
@@ -175,7 +217,17 @@ export function getAvailableSlots(
       continue;
     }
 
-    const hasOverlap = blockedRanges.some((blocked) =>
+    const conflictsWithAppointment = blockingAppointments.some((appointment) =>
+      doesSlotConflictWithBufferedAppointment(
+        slotStartTime,
+        slotEndTime,
+        appointment.startTime,
+        appointment.endTime,
+        bufferMinutes
+      )
+    );
+
+    const conflictsWithManualBlock = manualBlockedRanges.some((blocked) =>
       doTimeRangesOverlap(
         slotStartTime,
         slotEndTime,
@@ -184,7 +236,7 @@ export function getAvailableSlots(
       )
     );
 
-    if (!hasOverlap) {
+    if (!conflictsWithAppointment && !conflictsWithManualBlock) {
       availableSlots.push({
         startTime: slotStartTime,
         endTime: slotEndTime,

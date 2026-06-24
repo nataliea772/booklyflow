@@ -105,4 +105,6 @@ export type GetAvailableSlotsParams = {
   businessSettings: BusinessSettings;
   blockedTimes?: BlockedTime[];
   excludeAppointmentId?: string;
+  /** Grid step for slot starts; defaults to 30 minutes. */
+  slotIntervalMinutes?: number;
 };

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateEndTime,
+  DEFAULT_SLOT_INTERVAL_MINUTES,
   doTimeRangesOverlap,
+  doesSlotConflictWithBufferedAppointment,
   getAvailableSlots,
+  isBlockingAppointmentStatus,
   isDateFullyBlocked,
   minutesToTime,
   timeToMinutes,
@@ -45,6 +48,15 @@ const service20: Service = {
   description: "Short consultation",
   price: 0,
   durationMinutes: 20,
+  isActive: true,
+};
+
+const service30: Service = {
+  id: "quick",
+  name: "Quick Session",
+  description: "30-minute session",
+  price: 45,
+  durationMinutes: 30,
   isActive: true,
 };
 
@@ -220,7 +232,7 @@ describe("getAvailableSlots", () => {
     expect(slotStartTimes(slots)).toContain("10:30");
   });
 
-  it("does not block completed appointments", () => {
+  it("blocks completed appointments on the selected date", () => {
     const slots = getAvailableSlots({
       selectedDate: TEST_DATE,
       selectedService: service60,
@@ -235,11 +247,13 @@ describe("getAvailableSlots", () => {
       businessSettings,
     });
 
-    expect(slotStartTimes(slots)).toContain("10:00");
-    expect(slotStartTimes(slots)).toContain("10:30");
+    expect(slotStartTimes(slots)).not.toContain("10:00");
+    expect(slotStartTimes(slots)).not.toContain("10:30");
+    expect(slotStartTimes(slots)).not.toContain("11:00");
+    expect(slotStartTimes(slots)).toContain("11:30");
   });
 
-  it("applies bufferMinutes after appointments", () => {
+  it("applies bufferMinutes after confirmed appointments", () => {
     const slots = getAvailableSlots({
       selectedDate: TEST_DATE,
       selectedService: service60,
@@ -256,6 +270,95 @@ describe("getAvailableSlots", () => {
 
     expect(slotStartTimes(slots)).not.toContain("11:00");
     expect(slotStartTimes(slots)).toContain("11:30");
+  });
+
+  it("blocks candidate slots ending too close before an existing appointment", () => {
+    const morningSettings: BusinessSettings = {
+      ...businessSettings,
+      startHour: "09:00",
+      endHour: "12:00",
+      bufferMinutes: 15,
+      workingHours: workingHoursFromLegacy([0, 1, 2, 3, 4], "09:00", "12:00"),
+    };
+
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service30,
+      appointments: [
+        createAppointment({
+          id: "confirmed-morning",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings: morningSettings,
+      slotIntervalMinutes: 15,
+    });
+
+    expect(slotStartTimes(slots)).not.toContain("09:30");
+    expect(slotStartTimes(slots)).toContain("09:15");
+    expect(slotStartTimes(slots)).not.toContain("11:00");
+    expect(slotStartTimes(slots)).toContain("11:15");
+  });
+
+  it("respects different durations stored on existing appointments", () => {
+    const slots = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service30,
+      appointments: [
+        createAppointment({
+          id: "long-existing",
+          startTime: "10:00",
+          endTime: "11:30",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings,
+      slotIntervalMinutes: 15,
+    });
+
+    expect(slotStartTimes(slots)).not.toContain("09:45");
+    expect(slotStartTimes(slots)).not.toContain("11:30");
+    expect(slotStartTimes(slots)).toContain("11:45");
+  });
+
+  it("uses bufferMinutes from business settings", () => {
+    const noBufferSettings: BusinessSettings = {
+      ...businessSettings,
+      bufferMinutes: 0,
+    };
+
+    const withBuffer = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service60,
+      appointments: [
+        createAppointment({
+          id: "confirmed-no-gap",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings,
+    });
+
+    const withoutBuffer = getAvailableSlots({
+      selectedDate: TEST_DATE,
+      selectedService: service60,
+      appointments: [
+        createAppointment({
+          id: "confirmed-no-gap",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "confirmed",
+        }),
+      ],
+      businessSettings: noBufferSettings,
+    });
+
+    expect(slotStartTimes(withBuffer)).not.toContain("11:00");
+    expect(slotStartTimes(withoutBuffer)).toContain("11:00");
   });
 
   it("returns an empty array for non-working days", () => {
@@ -491,5 +594,61 @@ describe("getAvailableSlots", () => {
     expect(slotStartTimes(slots)).not.toContain("13:30");
     expect(slotStartTimes(slots)).toContain("11:00");
     expect(slotStartTimes(slots)).toContain("16:00");
+  });
+});
+
+describe("isBlockingAppointmentStatus", () => {
+  it("blocks pending, confirmed, and completed appointments", () => {
+    expect(isBlockingAppointmentStatus("pending")).toBe(true);
+    expect(isBlockingAppointmentStatus("confirmed")).toBe(true);
+    expect(isBlockingAppointmentStatus("completed")).toBe(true);
+  });
+
+  it("does not block cancelled appointments", () => {
+    expect(isBlockingAppointmentStatus("cancelled")).toBe(false);
+  });
+});
+
+describe("doesSlotConflictWithBufferedAppointment", () => {
+  it("blocks a candidate ending exactly at an existing start when buffer is required", () => {
+    expect(
+      doesSlotConflictWithBufferedAppointment(
+        "09:30",
+        "10:00",
+        "10:00",
+        "11:00",
+        15
+      )
+    ).toBe(true);
+  });
+
+  it("allows a candidate that leaves buffer before an existing appointment", () => {
+    expect(
+      doesSlotConflictWithBufferedAppointment(
+        "09:15",
+        "09:45",
+        "10:00",
+        "11:00",
+        15
+      )
+    ).toBe(false);
+  });
+
+  it("blocks a candidate starting immediately after an existing appointment", () => {
+    expect(
+      doesSlotConflictWithBufferedAppointment(
+        "11:00",
+        "11:30",
+        "10:00",
+        "11:00",
+        15
+      )
+    ).toBe(true);
+  });
+});
+
+describe("DEFAULT_SLOT_INTERVAL_MINUTES", () => {
+  it("defaults slot grid to 30 minutes", () => {
+    expect(DEFAULT_SLOT_INTERVAL_MINUTES).toBe(30);
   });
 });
